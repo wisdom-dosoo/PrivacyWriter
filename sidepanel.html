@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrivacyWriter Side Panel</title>
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    /* Side Panel Specific Overrides */
+    body {
+      width: 100%;
+      min-height: 100vh;
+      max-height: none;
+      overflow-y: auto;
+    }
+    .container {
+      max-width: 100%;
+      padding-bottom: 40px;
+    }
+    /* Hide the side panel button since we are already in it */
+    #btnSidePanel {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-icon">🔒</span>
+        <h1>PrivacyWriter</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span id="proBadge" class="pro-badge hidden">PRO</span>
+        <button id="btnSettings" class="icon-btn" title="Settings" style="background: none; border: none; cursor: pointer; font-size: 18px;">⚙️</button>
+      </div>
+    </div>
+    
+    <!-- Privacy Badge -->
+    <div class="privacy-badge">
+      <span class="shield">🛡️</span>
+      <span>100% Local Processing • Zero Data Sent</span>
+      <span id="aiStatusBadge" style="margin-left: auto; font-size: 12px; padding: 2px 6px; background: rgba(16, 185, 129, 0.2); border-radius: 4px; cursor: help;" title="Click for AI details">✅ Ready</span>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="write">✍️ Write</button>
+      <button class="nav-tab" data-tab="tools">🛠️ Tools</button>
+      <button class="nav-tab" data-tab="stats">📊 Stats</button>
+    </div>
+
+    <!-- Write Tab -->
+    <div class="tab-content active" id="write">
+      <div class="section">
+        <textarea 
+          id="inputText" 
+          placeholder="Paste or type text here to check grammar, rewrite, summarize, or translate..."
+          rows="8"
+        ></textarea>
+        
+        <div class="char-count">
+          <span id="charCount">0</span> characters
+          <span id="usageCount" class="usage-badge">25/25 left today</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="section">
+        <h3>Quick Actions</h3>
+        <div class="action-grid">
+          <button class="action-btn" id="btnGrammar" title="Check Grammar">
+            <span class="action-icon">✏️</span>
+            <span>Grammar</span>
+          </button>
+          <button class="action-btn" id="btnRewrite" title="Rewrite">
+            <span class="action-icon">🔄</span>
+            <span>Rewrite</span>
+          </button>
+          <button class="action-btn" id="btnSummarize" title="Summarize">
+            <span class="action-icon">📋</span>
+            <span>Summarize</span>
+          </button>
+          <button class="action-btn" id="btnTranslate" title="Translate">
+            <span class="action-icon">🌐</span>
+            <span>Translate</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tone Selection (for Rewrite) -->
+      <div class="section tone-section hidden" id="toneSection">
+        <h3>Rewrite Style</h3>
+        <div class="tone-options">
+          <button class="tone-btn" data-tone="more-formal">💼 Professional</button>
+          <button class="tone-btn" data-tone="more-casual">😊 Casual</button>
+          <button class="tone-btn" data-tone="shorter">📝 Shorter</button>
+          <button class="tone-btn" data-tone="longer">📄 Longer</button>
+        </div>
+      </div>
+
+      <!-- Language Selection (for Translate) -->
+      <div class="section lang-section hidden" id="langSection">
+        <h3>Translate To</h3>
+        <div class="lang-options">
+          <button class="lang-btn" data-lang="es">🇪🇸 Spanish</button>
+          <button class="lang-btn" data-lang="fr">🇫🇷 French</button>
+          <button class="lang-btn" data-lang="de">🇩🇪 German</button>
+          <button class="lang-btn" data-lang="zh">🇨🇳 Chinese</button>
+          <button class="lang-btn" data-lang="ja">🇯🇵 Japanese</button>
+          <button class="lang-btn" data-lang="pt">🇧🇷 Portuguese</button>
+        </div>
+        <div style="margin-top: 12px;">
+          <select id="proLanguageSelect" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-light); color: var(--text);">
+            <option value="">Select from 50+ Pro Languages...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="section output-section hidden" id="outputSection">
+        <div class="output-header">
+          <h3>Result</h3>
+          <div class="output-actions">
+            <button class="icon-btn" id="copyResult" title="Copy">📋</button>
+            <button class="icon-btn" id="replaceOriginal" title="Use This">✅</button>
+          </div>
+        </div>
+        <div id="outputText" class="output-text"></div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading hidden" id="loading">
+        <div class="spinner"></div>
+        <span>Processing locally...</span>
+      </div>
+    </div>
+
+    <!-- Tools Tab -->
+    <div class="tab-content" id="tools">
+      <div class="section">
+        <h3>AI Writing Tools</h3>
+        
+        <div class="tool-card" id="toolCompose">
+          <div class="tool-icon">📝</div>
+          <div class="tool-info">
+            <h4>Compose Email</h4>
+            <p>Generate professional emails from brief descriptions</p>
+          </div>
+          <span class="pro-tag hidden">PRO</span>
+        </div>
+        
+        <div class="tool-card" id="toolExpand">
+          <div class="tool-icon">📄</div>
+          <div class="tool-info">
+            <h4>Expand Ideas</h4>
+            <p>Turn bullet points into full paragraphs</p>
+          </div>
+          <span class="pro-tag hidden">PRO</span>
+        </div>
+        
+        <div class="tool-card" id="toolSimplify">
+          <div class="tool-icon">🎯</div>
+          <div class="tool-info">
+            <h4>Simplify Language</h4>
+            <p>Make complex text easier to understand</p>
+          </div>
+        </div>
+        
+        <div class="tool-card locked" id="toolCoach">
+          <div class="tool-icon">🎓</div>
+          <div class="tool-info">
+            <h4>Writing Coach</h4>
+            <p>Get feedback on tone & clarity</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </div>
+        
+        <div class="tool-card locked" id="toolCustom">
+          <div class="tool-icon">⚡</div>
+          <div class="tool-info">
+            <h4>Custom Prompts</h4>
+            <p>Create your own AI writing prompts</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </div>
+        
+        <div class="tool-card locked" id="toolHistory">
+          <div class="tool-icon">📚</div>
+          <div class="tool-info">
+            <h4>History & Favorites</h4>
+            <p>Access your past generations</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </div>
+        
+        <a href="public/batch-processor.html" target="_blank" class="tool-card locked" id="toolBatch" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">📑</div>
+          <div class="tool-info">
+            <h4>Batch Processor</h4>
+            <p>Bulk edit & translate docs</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
+
+        <a href="public/style-guide-manager.html" target="_blank" class="tool-card locked" id="toolStyle" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">📏</div>
+          <div class="tool-info">
+            <h4>Style Guide</h4>
+            <p>Set team writing rules</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
+
+        <div class="tool-card locked" id="toolApi">
+          <div class="tool-icon">🔑</div>
+          <div class="tool-info">
+            <h4>API Access</h4>
+            <p>Get API keys</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </div>
+      </div>
+
+      <!-- AI Status -->
+      <div class="section">
+        <h3>AI Status</h3>
+        <div class="ai-status" id="aiStatus">
+          <div class="status-item">
+            <span>Gemini Nano</span>
+            <span class="status-badge checking" id="statusNano">Checking...</span>
+          </div>
+          <div class="status-item">
+            <span>Grammar API</span>
+            <span class="status-badge checking" id="statusGrammar">Checking...</span>
+          </div>
+          <div class="status-item">
+            <span>Translation API</span>
+            <span class="status-badge checking" id="statusTranslate">Checking...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Tab -->
+    <div class="tab-content" id="stats">
+      <!-- Usage Stats -->
+      <div class="section">
+        <h3>Your Impact</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="statWords">0</span>
+            <span class="stat-label">Words Processed</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statGrammar">0</span>
+            <span class="stat-label">Grammar Checks</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statRewrites">0</span>
+            <span class="stat-label">Rewrites</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statTranslations">0</span>
+            <span class="stat-label">Translations</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy Guarantee -->
+      <div class="section privacy-section">
+        <h3>🔒 Privacy Guarantee</h3>
+        <ul class="privacy-list">
+          <li>✅ All processing happens on YOUR device</li>
+          <li>✅ Zero data sent to external servers</li>
+          <li>✅ No accounts required</li>
+          <li>✅ No tracking or analytics collected</li>
+          <li>✅ Works offline after AI model download</li>
+        </ul>
+      </div>
+
+      <!-- Upgrade Banner (Free Users) -->
+      <div class="upgrade-banner" id="upgradeBanner">
+        <h3>🚀 Unlock Pro Features</h3>
+        <p>Unlimited usage, custom prompts, history & more</p>
+        <button class="btn-upgrade" id="btnUpgrade">Upgrade to Pro - $4.99/mo</button>
+        <p class="annual-note">Or $39/year (save 34%)</p>
+      </div>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message hidden"></div>
+  </div>
+
+  <script src="pro-features.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

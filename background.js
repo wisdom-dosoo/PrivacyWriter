@@ -1,0 +1,1278 @@
+// PrivacyWriter Background Service Worker
+// Handles: AI initialization, context menus, keyboard shortcuts, Pro status
+
+importScripts('pro-features.js');
+importScripts('pro-plus-features.js');
+importScripts('fallback-engine.js');
+importScripts('claude-fallback.js');
+console.log('PrivacyWriter Background Service Worker Started');
+
+// DEV: Force Activate Pro Plus features for testing
+chrome.storage.local.set({
+  isPro: true,
+  plan: 'pro_plus'
+});
+
+// AI Session holders
+let writerSession = null;
+let rewriterSession = null;
+let summarizerSession = null;
+let translatorSession = null;
+let proofreaderSession = null;
+let promptSession = null;
+
+// ==========================================
+// INITIALIZATION
+// ==========================================
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('PrivacyWriter installed:', details.reason);
+  
+  try {
+    if (details.reason === 'install') {
+      await initializeExtension();
+      chrome.tabs.create({ url: 'landing-page.html' }).catch(err => 
+        console.error('Failed to open landing page:', err)
+      );
+    }
+    
+    createContextMenus();
+    await checkAICapabilities();
+  } catch (error) {
+    console.error('Error during installation:', error);
+  }
+});
+
+async function initializeExtension() {
+  await chrome.storage.local.set({
+    isPro: false,
+    isPro: true,
+    plan: 'pro_plus',
+    settings: {
+      autoCorrect: false,
+      showInlineTools: true,
+      defaultTone: 'professional',
+      defaultLength: 'concise',
+      preferredLanguage: 'en'
+    },
+    analytics: {
+      grammarChecks: 0,
+      rewrites: 0,
+      summaries: 0,
+      translations: 0,
+      wordsProcessed: 0
+    },
+    usageToday: {
+      date: new Date().toDateString(),
+      count: 0
+    },
+    installDate: Date.now(),
+    // NEW: AI Fallback Configuration
+    aiConfig: {
+      preferredModel: 'gemini-nano',
+      transformersAvailable: false,
+      transformersModels: {
+        grammar: false,
+        rewrite: false,
+        summarize: false,
+        translate: false
+      }
+    },
+    // NEW: API Keys (encrypted in production, plaintext in dev)
+    apiKeys: {
+      claude: ''
+    }
+  });
+}
+
+// ==========================================
+// AI CAPABILITY CHECK
+// ==========================================
+
+async function checkAICapabilities() {
+  const capabilities = {
+    prompt: false,
+    writer: false,
+    rewriter: false,
+    summarizer: false,
+    translator: false,
+    proofreader: false
+  };
+  
+  try {
+    // Check Prompt API
+    if ('ai' in self && 'languageModel' in self.ai) {
+      const status = await self.ai.languageModel.capabilities();
+      capabilities.prompt = status.available === 'readily' || status.available === 'after-download';
+    }
+    
+    // Check Writer API
+    if ('ai' in self && 'writer' in self.ai) {
+      const status = await self.ai.writer.capabilities();
+      capabilities.writer = status.available === 'readily' || status.available === 'after-download';
+    }
+    
+    // Check Rewriter API
+    if ('ai' in self && 'rewriter' in self.ai) {
+      const status = await self.ai.rewriter.capabilities();
+      capabilities.rewriter = status.available === 'readily' || status.available === 'after-download';
+    }
+    
+    // Check Summarizer API
+    if ('ai' in self && 'summarizer' in self.ai) {
+      const status = await self.ai.summarizer.capabilities();
+      capabilities.summarizer = status.available === 'readily' || status.available === 'after-download';
+    }
+    
+    // Check Translator API
+    if ('ai' in self && 'translator' in self.ai) {
+      capabilities.translator = true;
+    }
+    
+    console.log('AI Capabilities:', capabilities);
+  } catch (error) {
+    console.error('Error checking AI capabilities:', error);
+  }
+  
+  await chrome.storage.local.set({ aiCapabilities: capabilities });
+  return capabilities;
+}
+
+// ==========================================
+// AI DIAGNOSTICS & HELP
+// ==========================================
+
+async function getAIDiagnostics() {
+  const diagnostics = {
+    chromeVersion: '',
+    aiAvailable: false,
+    apis: {
+      prompt: false,
+      writer: false,
+      rewriter: false,
+      summarizer: false,
+      translator: false,
+      proofreader: false
+    },
+    requiredFlags: [
+      'prompt-api-for-gemini-nano',
+      'optimization-guide-on-device-model',
+      'summarization-api-for-gemini-nano',
+      'rewriter-api-for-gemini-nano',
+      'translation-api'
+    ],
+    setupUrl: 'chrome://flags',
+    componentUrl: 'chrome://components'
+  };
+
+  try {
+    // Check if any AI API is available
+    if ('ai' in self) {
+      diagnostics.aiAvailable = true;
+      
+      if ('languageModel' in self.ai) diagnostics.apis.prompt = true;
+      if ('writer' in self.ai) diagnostics.apis.writer = true;
+      if ('rewriter' in self.ai) diagnostics.apis.rewriter = true;
+      if ('summarizer' in self.ai) diagnostics.apis.summarizer = true;
+      if ('translator' in self.ai) diagnostics.apis.translator = true;
+      if ('proofreader' in self.ai) diagnostics.apis.proofreader = true;
+    }
+  } catch (error) {
+    console.error('Error getting diagnostics:', error);
+  }
+
+  return diagnostics;
+}
+
+// ==========================================
+// CONTEXT MENUS
+// ==========================================
+
+function createContextMenus() {
+  chrome.contextMenus.removeAll(() => {
+    // Parent menu
+    chrome.contextMenus.create({
+      id: 'privacylens',
+      title: '🔒 PrivacyWriter AI',
+      contexts: ['selection']
+    });
+    
+    // Grammar check
+    chrome.contextMenus.create({
+      id: 'checkGrammar',
+      parentId: 'privacylens',
+      title: '✏️ Check Grammar & Spelling',
+      contexts: ['selection']
+    });
+    
+    // Rewrite options
+    chrome.contextMenus.create({
+      id: 'rewrite',
+      parentId: 'privacylens',
+      title: '🔄 Rewrite',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-professional',
+      parentId: 'rewrite',
+      title: '💼 Make Professional',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-casual',
+      parentId: 'rewrite',
+      title: '😊 Make Casual',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-shorter',
+      parentId: 'rewrite',
+      title: '📝 Make Shorter',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-longer',
+      parentId: 'rewrite',
+      title: '📄 Make Longer',
+      contexts: ['selection']
+    });
+    
+    // Summarize
+    chrome.contextMenus.create({
+      id: 'summarize',
+      parentId: 'privacylens',
+      title: '📋 Summarize',
+      contexts: ['selection']
+    });
+    
+    // Translate
+    chrome.contextMenus.create({
+      id: 'translate',
+      parentId: 'privacylens',
+      title: '🌐 Translate',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'translate-es',
+      parentId: 'translate',
+      title: '🇪🇸 Spanish',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'translate-fr',
+      parentId: 'translate',
+      title: '🇫🇷 French',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'translate-de',
+      parentId: 'translate',
+      title: '🇩🇪 German',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'translate-zh',
+      parentId: 'translate',
+      title: '🇨🇳 Chinese',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'translate-ja',
+      parentId: 'translate',
+      title: '🇯🇵 Japanese',
+      contexts: ['selection']
+    });
+  });
+}
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  const text = info.selectionText;
+  if (!text) return;
+  
+  let result = null;
+  let action = '';
+  
+  try {
+    switch (info.menuItemId) {
+      case 'checkGrammar':
+        action = 'grammar';
+        result = await checkGrammar(text);
+        break;
+        
+      case 'rewrite-professional':
+        action = 'rewrite';
+        result = await rewriteText(text, 'more-formal');
+        break;
+        
+      case 'rewrite-casual':
+        action = 'rewrite';
+        result = await rewriteText(text, 'more-casual');
+        break;
+        
+      case 'rewrite-shorter':
+        action = 'rewrite';
+        result = await rewriteText(text, 'shorter');
+        break;
+        
+      case 'rewrite-longer':
+        action = 'rewrite';
+        result = await rewriteText(text, 'longer');
+        break;
+        
+      case 'summarize':
+        action = 'summarize';
+        result = await summarizeText(text);
+        break;
+        
+      case 'translate-es':
+        action = 'translate';
+        result = await translateText(text, 'es');
+        break;
+        
+      case 'translate-fr':
+        action = 'translate';
+        result = await translateText(text, 'fr');
+        break;
+        
+      case 'translate-de':
+        action = 'translate';
+        result = await translateText(text, 'de');
+        break;
+        
+      case 'translate-zh':
+        action = 'translate';
+        result = await translateText(text, 'zh');
+        break;
+        
+      case 'translate-ja':
+        action = 'translate';
+        result = await translateText(text, 'ja');
+        break;
+    }
+    
+    if (result) {
+      // Send result to content script
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'showResult',
+        originalText: text,
+        result: result,
+        type: action
+      });
+      
+      // Update analytics
+      await updateAnalytics(action, text.split(/\s+/).length);
+    }
+  } catch (error) {
+    console.error('Context menu action error:', error);
+    
+    // Attempt fallback if AI error occurred
+    if (action && text) {
+       // Logic to retry with fallback could go here, but for context menus we usually just report error
+    }
+    
+    let errorMessage = error.message || 'An unexpected error occurred.';
+    if (error.message.includes('Text is too short to summarize')) {
+        errorMessage = 'The selected text is too short to summarize. Please select a longer passage.';
+    }
+
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'showError',
+      error: errorMessage
+    });
+
+
+  }
+});
+
+// ==========================================
+// AI FUNCTIONS
+// ==========================================
+
+async function checkGrammar(text) {
+  // Validate input
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    throw new Error('Please provide text to check.');
+  }
+
+  if (text.length > 50000) {
+    throw new Error('Text is too long. Maximum 50,000 characters allowed.');
+  }
+
+  // Check usage limits for free users
+  const canProceed = await checkUsageLimits();
+  if (!canProceed) {
+    throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
+  }
+
+  // Get settings
+  const { settings, apiKeys = {}, isPro } = await chrome.storage.local.get(['settings', 'apiKeys', 'isPro']);
+  const autoCorrect = settings?.autoCorrect || false;
+
+  try {
+    // TIER 1: Try Proofreader API (Chrome native - fastest)
+    if ('ai' in self && 'proofreader' in self.ai) {
+      try {
+        if (!proofreaderSession) {
+          proofreaderSession = await self.ai.proofreader.create();
+        }
+        const result = await proofreaderSession.proofread(text);
+        await saveHistoryItem('grammar', text, result);
+        console.log('✅ Grammar check: Using Chrome Proofreader API');
+        return result || 'No grammar issues found.';
+      } catch (err) {
+        console.warn('❌ Proofreader API failed, attempting next tier:', err.message);
+        proofreaderSession = null;
+      }
+    }
+
+    // TIER 2: Try Prompt API (Chrome native - fallback)
+    if ('ai' in self && 'languageModel' in self.ai) {
+      try {
+        if (!promptSession) {
+          promptSession = await self.ai.languageModel.create({
+            systemPrompt: `You are a grammar and spelling checker.
+            Analyze the text and return a corrected version.
+            Only fix actual errors, don't change style unless necessary.`
+          });
+        }
+
+        let prompt;
+        if (autoCorrect) {
+          prompt = `Correct grammar and spelling. Return ONLY the corrected text:\n\n"${text}"`;
+        } else {
+          prompt = `Check and correct grammar/spelling in this text:\n\n"${text}"\n\nFormat: Return the corrected text, then list changes made.`;
+        }
+
+        const response = await promptSession.prompt(prompt);
+        await saveHistoryItem('grammar', text, response);
+        console.log('✅ Grammar check: Using Chrome Prompt API');
+        return response || 'No grammar issues found.';
+      } catch (err) {
+        console.warn('❌ Prompt API failed, attempting next tier:', err.message);
+        promptSession = null;
+      }
+    }
+
+    // TIER 3: Try Claude API (Cloud - Pro tier only)
+    if (isPro && apiKeys?.claude) {
+      try {
+        console.log('Attempting Claude API for grammar...');
+        const result = await checkGrammarWithClaude(text, apiKeys.claude);
+        await saveHistoryItem('grammar', text, result);
+        await updateAnalytics('grammar-claude', text.split(/\s+/).length);
+        console.log('✅ Grammar check: Using Claude API');
+        return result || 'No grammar issues found.';
+      } catch (err) {
+        console.warn('❌ Claude API failed, attempting next tier:', err.message);
+      }
+    }
+
+    // TIER 4: Try Transformers.js local (offline)
+    try {
+      console.log('Attempting local Transformers.js for grammar...');
+      const result = await runFallbackAI('grammar', text);
+      await saveHistoryItem('grammar', text, result);
+      console.log('✅ Grammar check: Using local Transformers.js');
+      return result || 'No grammar issues found.';
+    } catch (err) {
+      console.warn('❌ Transformers.js failed, attempting simple rules:', err.message);
+    }
+
+    // TIER 5: Simple regex-based rules (always works)
+    console.log('Using simple regex-based grammar rules...');
+    const result = simpleGrammarFix(text);
+    await saveHistoryItem('grammar', text, result);
+    console.log('✅ Grammar check: Using simple rules');
+    return result || text;
+
+  } catch (error) {
+    console.error('All grammar check methods failed:', error);
+
+    throw new Error(
+      'Chrome AI is not available. Quick fix:\n' +
+      '1. Open chrome://flags\n' +
+      '2. Search for "prompt-api"\n' +
+      '3. Enable "prompt-api-for-gemini-nano"\n' +
+      '4. Restart Chrome\n' +
+      '5. Try again\n\n' +
+      'Pro members: Add Claude API key in Settings for faster fallback.'
+    );
+  }
+}
+
+async function rewriteText(text, style) {
+  // Validate input
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    throw new Error('Please provide text to rewrite.');
+  }
+
+  if (text.length > 50000) {
+    throw new Error('Text is too long. Maximum 50,000 characters allowed.');
+  }
+
+  const validStyles = ['more-formal', 'more-casual', 'shorter', 'longer'];
+  if (!validStyles.includes(style)) {
+    throw new Error('Invalid rewrite style specified.');
+  }
+
+  const canProceed = await checkUsageLimits();
+  if (!canProceed) {
+    throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
+  }
+
+  const { apiKeys = {}, isPro } = await chrome.storage.local.get(['apiKeys', 'isPro']);
+
+  try {
+    // TIER 1: Try Rewriter API (Chrome native - fastest)
+    if ('ai' in self && 'rewriter' in self.ai) {
+      try {
+        if (!rewriterSession) {
+          rewriterSession = await self.ai.rewriter.create({
+            tone: style === 'more-formal' ? 'more-formal' :
+                  style === 'more-casual' ? 'more-casual' : 'as-is',
+            length: style === 'shorter' ? 'shorter' :
+                    style === 'longer' ? 'longer' : 'as-is'
+          });
+        }
+
+        const result = await rewriterSession.rewrite(text);
+        await saveHistoryItem('rewrite', text, result);
+        console.log('✅ Rewrite: Using Chrome Rewriter API');
+        return result || text;
+      } catch (err) {
+        console.warn('❌ Rewriter API failed, attempting next tier:', err.message);
+        rewriterSession = null;
+      }
+    }
+
+    // TIER 2: Try Prompt API (Chrome native - fallback)
+    if ('ai' in self && 'languageModel' in self.ai) {
+      try {
+        if (!promptSession) {
+          promptSession = await self.ai.languageModel.create();
+        }
+
+        const stylePrompts = {
+          'more-formal': 'Rewrite this text in a more professional, formal tone:',
+          'more-casual': 'Rewrite this text in a more casual, friendly tone:',
+          'shorter': 'Rewrite this text to be more concise while keeping the meaning:',
+          'longer': 'Expand this text with more detail while keeping the same meaning:'
+        };
+
+        const response = await promptSession.prompt(
+          `${stylePrompts[style]}\n\n"${text}"`
+        );
+        await saveHistoryItem('rewrite', text, response);
+        console.log('✅ Rewrite: Using Chrome Prompt API');
+        return response || text;
+      } catch (err) {
+        console.warn('❌ Prompt API failed, attempting next tier:', err.message);
+        promptSession = null;
+      }
+    }
+
+    // TIER 3: Try Claude API (Cloud - Pro tier only)
+    if (isPro && apiKeys?.claude) {
+      try {
+        console.log('Attempting Claude API for rewrite...');
+        const result = await rewriteTextWithClaude(text, style, apiKeys.claude);
+        await saveHistoryItem('rewrite', text, result);
+        await updateAnalytics('rewrite-claude', text.split(/\s+/).length);
+        console.log('✅ Rewrite: Using Claude API');
+        return result || text;
+      } catch (err) {
+        console.warn('❌ Claude API failed, attempting next tier:', err.message);
+      }
+    }
+
+    // TIER 4: Try Transformers.js local (offline)
+    try {
+      console.log('Attempting local Transformers.js for rewrite...');
+      const result = await runFallbackAI('rewrite', text, { style });
+      await saveHistoryItem('rewrite', text, result);
+      console.log('✅ Rewrite: Using local Transformers.js');
+      return result || text;
+    } catch (err) {
+      console.warn('❌ Transformers.js failed, attempting simple rules:', err.message);
+    }
+
+    // TIER 5: Simple regex-based rules (always works)
+    console.log('Using simple regex-based rewriting...');
+    const result = simpleRewrite(text, style);
+    await saveHistoryItem('rewrite', text, result);
+    console.log('✅ Rewrite: Using simple rules');
+    return result || text;
+
+  } catch (error) {
+    console.error('All rewrite methods failed:', error);
+    throw new Error(
+      'Chrome AI is not available. Quick fix:\n' +
+      '1. Open chrome://flags\n' +
+      '2. Search for "rewriter-api"\n' +
+      '3. Enable "rewriter-api-for-gemini-nano"\n' +
+      '4. Restart Chrome\n' +
+      '5. Try again\n\n' +
+      'Pro members: Add Claude API key in Settings for faster fallback.'
+    );
+  }
+}
+
+async function summarizeText(text) {
+  // Validate input
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    throw new Error('Please provide text to summarize.');
+  }
+
+  if (text.length > 100000) {
+    throw new Error('Text is too long. Maximum 100,000 characters allowed.');
+  }
+
+  if (text.split(/\s+/).length < 20) {
+    throw new Error('Text is too short to summarize. Please provide at least 20 words.');
+  }
+
+  const canProceed = await checkUsageLimits();
+  if (!canProceed) {
+    throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
+  }
+
+  const { apiKeys = {}, isPro } = await chrome.storage.local.get(['apiKeys', 'isPro']);
+
+  try {
+    // TIER 1: Try Summarizer API (Chrome native - fastest)
+    if ('ai' in self && 'summarizer' in self.ai) {
+      try {
+        if (!summarizerSession) {
+          summarizerSession = await self.ai.summarizer.create({
+            type: 'key-points',
+            length: 'medium'
+          });
+        }
+
+        const result = await summarizerSession.summarize(text);
+        await saveHistoryItem('summarize', text, result);
+        console.log('✅ Summarize: Using Chrome Summarizer API');
+        return result || 'Unable to generate summary. Try shorter text.';
+      } catch (err) {
+        console.warn('❌ Summarizer API failed, attempting next tier:', err.message);
+        summarizerSession = null;
+      }
+    }
+
+    // TIER 2: Try Prompt API (Chrome native - fallback)
+    if ('ai' in self && 'languageModel' in self.ai) {
+      try {
+        if (!promptSession) {
+          promptSession = await self.ai.languageModel.create();
+        }
+
+        const response = await promptSession.prompt(
+          `Summarize this text in 2-3 key points:\n\n"${text}"`
+        );
+        await saveHistoryItem('summarize', text, response);
+        console.log('✅ Summarize: Using Chrome Prompt API');
+        return response || 'Unable to generate summary.';
+      } catch (err) {
+        console.warn('❌ Prompt API failed, attempting next tier:', err.message);
+        promptSession = null;
+      }
+    }
+
+    // TIER 3: Try Claude API (Cloud - Pro tier only)
+    if (isPro && apiKeys?.claude) {
+      try {
+        console.log('Attempting Claude API for summarization...');
+        const result = await summarizeTextWithClaude(text, apiKeys.claude);
+        await saveHistoryItem('summarize', text, result);
+        await updateAnalytics('summarize-claude', text.split(/\s+/).length);
+        console.log('✅ Summarize: Using Claude API');
+        return result || 'Unable to generate summary.';
+      } catch (err) {
+        console.warn('❌ Claude API failed, attempting next tier:', err.message);
+      }
+    }
+
+    // TIER 4: Try Transformers.js local (offline)
+    try {
+      console.log('Attempting local Transformers.js for summarization...');
+      const result = await runFallbackAI('summarize', text);
+      await saveHistoryItem('summarize', text, result);
+      console.log('✅ Summarize: Using local Transformers.js');
+      return result || 'Unable to generate summary.';
+    } catch (err) {
+      console.warn('❌ Transformers.js failed:', err.message);
+    }
+
+    throw new Error(
+      'Summarization service unavailable. Please try again later or upgrade to Pro for Claude API fallback.\n\n' +
+      'To enable Chrome AI:\n' +
+      '1. Open chrome://flags\n' +
+      '2. Search for "summarization-api"\n' +
+      '3. Enable "summarization-api-for-gemini-nano"\n' +
+      '4. Restart Chrome'
+    );
+  } catch (error) {
+    console.error('All summarize methods failed:', error);
+    throw error;
+  }
+}
+
+async function translateText(text, targetLang) {
+  // Validate input
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    throw new Error('Please provide text to translate.');
+  }
+
+  if (text.length > 50000) {
+    throw new Error('Text is too long. Maximum 50,000 characters allowed.');
+  }
+
+  const canProceed = await checkUsageLimits();
+  if (!canProceed) {
+    throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
+  }
+
+  // Check Pro status for language support
+  const { isPro, apiKeys = {} } = await chrome.storage.local.get(['isPro', 'apiKeys']);
+
+  // Validate language availability
+  if (isPro) {
+    if (!PRO_LANGUAGES[targetLang]) {
+      throw new Error(`Language '${targetLang}' is not supported even in Pro.`);
+    }
+  } else {
+    if (!FREE_LANGUAGES.includes(targetLang)) {
+      throw new Error(`Language '${targetLang}' is a Pro feature. Upgrade to access 50+ languages.`);
+    }
+  }
+
+  const targetLangName = PRO_LANGUAGES[targetLang] || targetLang;
+
+  try {
+    // TIER 1: Try Translator API (Chrome native - fastest)
+    if ('ai' in self && 'translator' in self.ai) {
+      try {
+        const translator = await self.ai.translator.create({
+          sourceLanguage: 'en',
+          targetLanguage: targetLang
+        });
+
+        const result = await translator.translate(text);
+        await saveHistoryItem('translate', text, result);
+        console.log('✅ Translate: Using Chrome Translator API');
+        return result || text;
+      } catch (err) {
+        console.warn('❌ Translator API failed, attempting next tier:', err.message);
+      }
+    }
+
+    // TIER 2: Try Prompt API (Chrome native - fallback)
+    if ('ai' in self && 'languageModel' in self.ai) {
+      try {
+        if (!promptSession) {
+          promptSession = await self.ai.languageModel.create();
+        }
+
+        const response = await promptSession.prompt(
+          `Translate this text to ${targetLangName}:\n\n"${text}"`
+        );
+        await saveHistoryItem('translate', text, response);
+        console.log('✅ Translate: Using Chrome Prompt API');
+        return response || text;
+      } catch (err) {
+        console.warn('❌ Prompt API failed, attempting next tier:', err.message);
+        promptSession = null;
+      }
+    }
+
+    // TIER 3: Try Claude API (Cloud - Pro tier only)
+    if (isPro && apiKeys?.claude) {
+      try {
+        console.log('Attempting Claude API for translation...');
+        const result = await translateTextWithClaude(text, targetLang, apiKeys.claude);
+        await saveHistoryItem('translate', text, result);
+        await updateAnalytics('translate-claude', text.split(/\s+/).length);
+        console.log('✅ Translate: Using Claude API');
+        return result || text;
+      } catch (err) {
+        console.warn('❌ Claude API failed, attempting next tier:', err.message);
+      }
+    }
+
+    // TIER 4: Try Transformers.js local (offline)
+    try {
+      console.log('Attempting local Transformers.js for translation...');
+      const result = await runFallbackAI('translate', text, { targetLang });
+      await saveHistoryItem('translate', text, result);
+      console.log('✅ Translate: Using local Transformers.js');
+      return result || text;
+    } catch (err) {
+      console.warn('❌ Transformers.js failed:', err.message);
+    }
+
+    throw new Error(
+      'Translation service unavailable. Please try again later or upgrade to Pro for Claude API fallback.\n\n' +
+      'To enable Chrome AI:\n' +
+      '1. Open chrome://flags\n' +
+      '2. Search for "translation-api"\n' +
+      '3. Enable "translation-api"\n' +
+      '4. Restart Chrome'
+    );
+  } catch (error) {
+    console.error('All translate methods failed:', error);
+    throw error;
+  }
+}
+
+async function writeText(prompt, context) {
+  const canProceed = await checkUsageLimits();
+  if (!canProceed) {
+    throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
+  }
+  
+  try {
+    // Try Writer API
+    if ('ai' in self && 'writer' in self.ai) {
+      if (!writerSession) {
+        writerSession = await self.ai.writer.create({
+          tone: 'neutral',
+          length: 'medium'
+        });
+      }
+      
+      const result = await writerSession.write(prompt, { context });
+      return result;
+    }
+    
+    // Fallback to Prompt API
+    if ('ai' in self && 'languageModel' in self.ai) {
+      if (!promptSession) {
+        promptSession = await self.ai.languageModel.create();
+      }
+      
+      const response = await promptSession.prompt(prompt);
+      return response;
+    }
+    
+    throw new Error('AI not available');
+  } catch (error) {
+    console.error('Write error:', error);
+    try {
+      console.log('Attempting local fallback for Write...');
+      return await runFallbackAI('write', prompt, { context });
+    } catch (fallbackError) {
+      throw error;
+    }
+  }
+}
+
+async function processBatchItems(items, processor) {
+  if (!Array.isArray(items)) {
+    throw new Error('Items must be an array');
+  }
+
+  const results = [];
+
+  // Process sequentially to ensure stability of local AI models
+  for (const item of items) {
+    try {
+      if (!item || typeof item.text !== 'string') {
+        results.push({ id: item.id, status: 'error', error: 'Invalid item format' });
+        continue;
+      }
+
+      const result = await processor(item.text);
+      results.push({ id: item.id, status: 'success', result });
+    } catch (error) {
+      console.error(`Batch processing error for item ${item.id}:`, error);
+      results.push({ id: item.id, status: 'error', error: error.message || 'Unknown error' });
+    }
+  }
+
+  return results;
+}
+
+// ==========================================
+// USAGE LIMITS CHECK
+// ==========================================
+
+async function checkUsageLimits() {
+  try {
+    const { isPro, usageToday } = await chrome.storage.local.get(['isPro', 'usageToday']);
+
+    // Pro users have unlimited usage
+    if (isPro) {
+      return true;
+    }
+
+    // Free users: check daily limit (25 requests per day)
+    const today = new Date().toDateString();
+    const { count = 0, date = today } = usageToday || {};
+
+    // Reset counter if new day
+    if (date !== today) {
+      await chrome.storage.local.set({
+        usageToday: { date: today, count: 0 }
+      });
+      return true;
+    }
+
+    // Check if limit reached (25 requests per day for free users)
+    if (count >= 25) {
+      return false;
+    }
+
+    // Increment usage counter
+    await chrome.storage.local.set({
+      usageToday: { date: today, count: count + 1 }
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error checking usage limits:', error);
+    // On error, allow operation to proceed (fail open)
+    return true;
+  }
+}
+
+async function updateAnalytics(action, wordCount) {
+  const { analytics } = await chrome.storage.local.get('analytics');
+  
+  switch (action) {
+    case 'grammar':
+      analytics.grammarChecks = (analytics.grammarChecks || 0) + 1;
+      break;
+    case 'rewrite':
+      analytics.rewrites = (analytics.rewrites || 0) + 1;
+      break;
+    case 'summarize':
+      analytics.summaries = (analytics.summaries || 0) + 1;
+      break;
+    case 'translate':
+      analytics.translations = (analytics.translations || 0) + 1;
+      break;
+  }
+  
+  analytics.wordsProcessed = (analytics.wordsProcessed || 0) + wordCount;
+  
+  await chrome.storage.local.set({ analytics });
+}
+
+async function checkProPlusAccess() {
+  const data = await chrome.storage.local.get(['isPro', 'plan']);
+  if (!data.isPro) return false;
+  
+  const plan = data.plan || 'pro';
+  return ['pro_plus', 'team', 'enterprise'].includes(plan);
+}
+
+// ==========================================
+// MESSAGE HANDLING
+// ==========================================
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  (async () => {
+    try {
+      if (!request || !request.action) {
+        sendResponse({ success: false, error: 'No action specified' });
+        return;
+      }
+
+      switch (request.action) {
+        case 'checkGrammar':
+          try {
+            const grammarResult = await checkGrammar(request.text);
+            sendResponse({ success: true, result: grammarResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Grammar check failed' });
+          }
+          break;
+          
+        case 'rewrite':
+          try {
+            const rewriteResult = await rewriteText(request.text, request.style);
+            sendResponse({ success: true, result: rewriteResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Rewrite failed' });
+          }
+          break;
+          
+        case 'summarize':
+          try {
+            const summaryResult = await summarizeText(request.text);
+            sendResponse({ success: true, result: summaryResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Summarization failed' });
+          }
+          break;
+          
+        case 'translate':
+          try {
+            const translateResult = await translateText(request.text, request.targetLang);
+            sendResponse({ success: true, result: translateResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Translation failed' });
+          }
+          break;
+
+        case 'analyzeStyle':
+          if (!(await checkProPlusAccess())) {
+             sendResponse({ success: false, error: 'Upgrade to Pro Plus to use Style Guides' });
+             return;
+          }
+          try {
+            const styleResult = analyzeStyleGuide(request.text, request.guide);
+            sendResponse({ success: true, result: styleResult });
+          } catch (e) {
+            sendResponse({ success: false, error: e.message });
+          }
+          break;
+
+        case 'batchProcess':
+          if (!(await checkProPlusAccess())) {
+             sendResponse({ success: false, error: 'Upgrade to Pro Plus for Batch Processing' });
+             return;
+          }
+          try {
+            let processor;
+            if (request.task === 'grammar') processor = checkGrammar;
+            else if (request.task === 'rewrite') processor = (t) => rewriteText(t, request.style || 'more-formal');
+            else if (request.task === 'summarize') processor = summarizeText;
+            else if (request.task === 'translate') processor = (t) => translateText(t, request.targetLang);
+            else throw new Error('Invalid batch task');
+
+            const batchResults = await processBatchItems(request.items, processor);
+            sendResponse({ success: true, results: batchResults });
+          } catch (e) {
+             sendResponse({ success: false, error: e.message });
+          }
+          break;
+
+        case 'syncCloud':
+          const syncResult = await performCloudSync();
+          if (syncResult.success) {
+            sendResponse({ success: true, status: syncResult.status, timestamp: syncResult.timestamp });
+          } else {
+            sendResponse({ success: false, error: syncResult.error });
+          }
+          break;
+
+        case 'getStyleGuide':
+          const sgData = await chrome.storage.local.get('styleGuides');
+          // Return stored guide or default from pro-plus-features.js
+          sendResponse({ 
+            success: true, 
+            guide: sgData.styleGuides || PRO_PLUS_DEFAULTS.styleGuide 
+          });
+          break;
+
+        case 'saveStyleGuide':
+          if (await checkProPlusAccess()) {
+            await chrome.storage.local.set({ 
+              styleGuides: request.guide,
+              syncTimestamp: Date.now() // Update timestamp to trigger sync push
+            });
+            sendResponse({ success: true });
+          } else {
+            sendResponse({ success: false, error: 'Pro Plus required' });
+          }
+          break;
+          
+        case 'write':
+          try {
+            const writeResult = await writeText(request.prompt, request.context);
+            sendResponse({ success: true, result: writeResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Writing failed' });
+          }
+          break;
+          
+        case 'analyzeWriting':
+          try {
+            const analysisResult = await analyzeWritingQuality(request.text);
+            await updateAnalytics('coach', request.text.split(/\s+/).length);
+            sendResponse({ success: true, result: analysisResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Analysis failed' });
+          }
+          break;
+
+        case 'generateContent':
+          try {
+            const genResult = await generateContent(request.template, request.params);
+            sendResponse({ success: true, result: genResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Generation failed' });
+          }
+          break;
+
+        case 'checkCapabilities':
+          try {
+            const capabilities = await checkAICapabilities();
+            sendResponse({ success: true, capabilities });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Capability check failed' });
+          }
+          break;
+          
+        case 'getDiagnostics':
+          try {
+            const diagnostics = await getAIDiagnostics();
+            sendResponse({ success: true, diagnostics });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Diagnostics failed' });
+          }
+          break;
+          
+        case 'getAnalytics':
+          try {
+            const { analytics = { grammarChecks: 0, rewrites: 0, summaries: 0, translations: 0, wordsProcessed: 0 } } = 
+              await chrome.storage.local.get('analytics');
+            sendResponse({ success: true, analytics });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Failed to get analytics' });
+          }
+          break;
+          
+        case 'getUsage':
+          try {
+            const { usageToday = { date: new Date().toDateString(), count: 0 }, isPro = false } = 
+              await chrome.storage.local.get(['usageToday', 'isPro']);
+            sendResponse({ 
+              success: true, 
+              usage: usageToday, 
+              isPro,
+              limit: isPro ? Infinity : 25
+            });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Failed to get usage' });
+          }
+          break;
+          
+        case 'proActivated':
+          try {
+            await chrome.storage.local.set({
+              isPro: true,
+              plan: request.plan || 'pro',
+              proActivatedAt: Date.now()
+            });
+            sendResponse({ success: true });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Pro activation failed' });
+          }
+          break;
+
+        // NEW: Test Claude API Key
+        case 'testClaudeKey':
+          try {
+            const isValid = await testClaudeApiKey(request.apiKey);
+            if (isValid) {
+              // Save the API key if valid
+              const { apiKeys = {} } = await chrome.storage.local.get('apiKeys');
+              apiKeys.claude = request.apiKey;
+              await chrome.storage.local.set({ apiKeys });
+              sendResponse({ success: true, message: 'Claude API key is valid and saved!' });
+            } else {
+              sendResponse({ success: false, error: 'Invalid Claude API key' });
+            }
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'API key test failed' });
+          }
+          break;
+
+        // NEW: Save Claude API Key
+        case 'saveClaudeKey':
+          try {
+            const { apiKeys = {} } = await chrome.storage.local.get('apiKeys');
+            if (request.apiKey) {
+              apiKeys.claude = request.apiKey;
+            } else {
+              delete apiKeys.claude;
+            }
+            await chrome.storage.local.set({ apiKeys });
+            sendResponse({ success: true, message: 'Claude API key saved' });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // NEW: Get Model Download Status
+        case 'getModelStatus':
+          try {
+            const status = await getModelDownloadStatus();
+            sendResponse({ success: true, status });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // NEW: Download Fallback Model
+        case 'downloadFallbackModel':
+          try {
+            // Initiate model download (async)
+            getPipeline(request.task, FALLBACK_CONFIG.models[request.task]).then(() => {
+              chrome.runtime.sendMessage({
+                action: 'modelDownloadComplete',
+                task: request.task,
+                success: true
+              }).catch(() => {});
+            }).catch(err => {
+              chrome.runtime.sendMessage({
+                action: 'modelDownloadComplete',
+                task: request.task,
+                success: false,
+                error: err.message
+              }).catch(() => {});
+            });
+            sendResponse({ success: true, message: `Downloading ${request.task} model...` });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // NEW: Update Model Status (called from fallback-engine.js)
+        case 'updateModelStatus':
+          // Just log for now, could store in chrome.storage
+          console.log(`Model ${request.task} status: ${request.status}`, request.model);
+          break;
+
+        default:
+          sendResponse({ success: false, error: 'Unknown action: ' + request.action });
+      }
+    } catch (error) {
+      console.error('Message handler error:', error);
+      sendResponse({ success: false, error: 'Internal error: ' + error.message });
+    }
+  })();
+  
+  return true; // Keep channel open for async response
+});
+
+// ==========================================
+// KEYBOARD SHORTCUTS
+// ==========================================
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'open_sidepanel') {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
+});
+
+// ==========================================
+// SIDE PANEL
+// ==========================================
+
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+
+console.log('PrivacyLens Background Service Worker Ready');
