@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🔒 PrivacyWriter - Privacy-First AI Writing Assistant
 ## Complete Build & Launch Guide
 
@@ -412,3 +413,6 @@ Contributions welcome! Please read CONTRIBUTING.md first.
 ---
 
 **Built with 🔒 for privacy-conscious writers everywhere.**
+=======
+# PrivacyWriter
+>>>>>>> 0c46d0f0a3944bac5bbf74e4ff1ce35263ddfe48
