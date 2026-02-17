@@ -1,0 +1,19 @@
+# Ignore Extension Source Code
+background.js
+content.js
+content.css
+popup.js
+popup.html
+popup.css
+sidepanel.js
+sidepanel.html
+manifest.json
+icons/
+public/
+DOC/
+
+# Ignore System Files
+node_modules
+.git
+*.zip
+*.crx
