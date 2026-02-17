@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cloud Sync - PrivacyWriter</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f7fafc;padding:24px}
+    .card{max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{color:#475569;margin:0 0 18px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{font-weight:600;color:#0f172a;font-size:13px}
+    input,textarea,select{width:100%;padding:10px;border:1px solid #e6edf3;border-radius:6px}
+    button{background:#10b981;color:white;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+    button.secondary{background:#64748b}
+    pre{background:#0f172a;color:#e6edf3;padding:12px;border-radius:6px;overflow:auto}
+    .muted{color:#64748b;font-size:13px}
+    .controls{display:flex;gap:8px;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Cloud Sync (Prototype)</h1>
+    <p class="lead">Export an encrypted backup of your settings, history, and style guides. Import backups to restore data. Optionally upload to a mock server.</p>
+
+    <div style="margin-bottom:16px">
+      <label>Server Upload (optional)</label>
+      <div class="row">
+        <input id="uploadUrl" placeholder="https://example.com/receive-backup" />
+        <input id="uploadToken" placeholder="Optional API token" />
+      </div>
+      <div class="controls">
+        <button id="saveServer">Save Server</button>
+        <button class="secondary" id="pushServer">Push Now</button>
+      </div>
+      <p class="muted">If no server is configured, backups will be saved locally for download.</p>
+    </div>
+
+    <hr />
+
+    <div style="margin-top:12px">
+      <label>Encrypt & Download Backup</label>
+      <input id="exportPass" type="password" placeholder="Enter passphrase to encrypt backup" />
+      <div class="controls">
+        <button id="exportBtn">Export Encrypted Backup</button>
+        <button class="secondary" id="exportRaw">Export Raw JSON</button>
+      </div>
+    </div>
+
+    <hr />
+
+    <div style="margin-top:12px">
+      <label>Import Backup</label>
+      <input id="fileInput" type="file" accept=".json" />
+      <input id="importPass" type="password" placeholder="Passphrase (if encrypted)" style="margin-top:8px" />
+      <div class="controls">
+        <button id="importBtn">Import & Decrypt</button>
+        <button class="secondary" id="previewBtn">Preview Last Local Export</button>
+      </div>
+    </div>
+
+    <div id="preview" style="margin-top:18px;display:none">
+      <h3>Preview</h3>
+      <pre id="previewContent"></pre>
+      <div class="controls" style="margin-top:8px">
+        <button id="restoreBtn">Restore To Extension</button>
+      </div>
+    </div>
+
+    <div id="status" style="margin-top:14px" class="muted"></div>
+  </div>
+
+  <script src="cloud-sync.js"></script>
+</body>
+</html>

@@ -21,6 +21,91 @@
     #btnSidePanel {
       display: none;
     }
+
+    /* Enhanced Tab Responsiveness */
+    .nav-tabs {
+      display: flex;
+      background: var(--bg-light);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 16px;
+      gap: 4px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .nav-tab {
+      flex: 1;
+      min-width: 60px;
+      padding: 10px 8px;
+      text-align: center;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .nav-tab:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .nav-tab:active {
+      transform: translateY(0);
+    }
+
+    .nav-tab.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+      outline: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 400px) {
+      .nav-tab {
+        font-size: 11px;
+        padding: 8px 6px;
+        flex: 0.75;
+      }
+
+      .container {
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 300px) {
+      .nav-tab {
+        font-size: 10px;
+        padding: 6px 4px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -92,11 +177,26 @@
       <!-- Tone Selection (for Rewrite) -->
       <div class="section tone-section hidden" id="toneSection">
         <h3>Rewrite Style</h3>
-        <div class="tone-options">
+        <div class="tone-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <button class="tone-btn" data-tone="more-formal">💼 Professional</button>
           <button class="tone-btn" data-tone="more-casual">😊 Casual</button>
           <button class="tone-btn" data-tone="shorter">📝 Shorter</button>
           <button class="tone-btn" data-tone="longer">📄 Longer</button>
+          <button class="tone-btn" data-tone="executive">👔 Executive</button>
+          <button class="tone-btn" data-tone="academic">🎓 Academic</button>
+          <button class="tone-btn" data-tone="persuasive">💡 Persuasive</button>
+          <button class="tone-btn" data-tone="empathetic">❤️ Empathetic</button>
+          <button class="tone-btn" data-tone="humorous">😂 Humorous</button>
+          <button class="tone-btn" data-tone="critical">🎯 Critical</button>
+        </div>
+        <div style="margin-top: 8px; padding: 8px; background: rgba(139, 92, 246, 0.1); border-radius: 6px; font-size: 0.85em; color: var(--text-light);">
+          🔒 Last 6 tones require Pro upgrade
+          <button class="tone-btn" data-tone="executive">👔 Executive</button>
+          <button class="tone-btn" data-tone="academic">🎓 Academic</button>
+          <button class="tone-btn" data-tone="persuasive">💡 Persuasive</button>
+          <button class="tone-btn" data-tone="empathetic">❤️ Empathetic</button>
+          <button class="tone-btn" data-tone="humorous">😂 Humorous</button>
+          <button class="tone-btn" data-tone="critical">🎯 Critical</button>
         </div>
       </div>
 
@@ -186,14 +286,14 @@
           <span class="pro-tag">PRO</span>
         </div>
         
-        <div class="tool-card locked" id="toolHistory">
+        <a href="public/history.html" target="_blank" class="tool-card locked" id="toolHistory" style="text-decoration: none; color: inherit; display: flex;">
           <div class="tool-icon">📚</div>
           <div class="tool-info">
             <h4>History & Favorites</h4>
             <p>Access your past generations</p>
           </div>
           <span class="pro-tag">PRO</span>
-        </div>
+        </a>
         
         <a href="public/batch-processor.html" target="_blank" class="tool-card locked" id="toolBatch" style="text-decoration: none; color: inherit; display: flex;">
           <div class="tool-icon">📑</div>
@@ -213,6 +313,24 @@
           <span class="pro-tag">PRO+</span>
         </a>
 
+        <a href="public/content-generator.html" target="_blank" class="tool-card locked" id="toolGenerator" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">✨</div>
+          <div class="tool-info">
+            <h4>Content Generator</h4>
+            <p>Create with AI-powered templates</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="public/cloud-sync.html" target="_blank" class="tool-card locked" id="toolCloudSync" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">☁️</div>
+          <div class="tool-info">
+            <h4>Cloud Sync</h4>
+            <p>Backup & restore encrypted data</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
+
         <div class="tool-card locked" id="toolApi">
           <div class="tool-icon">🔑</div>
           <div class="tool-info">
@@ -221,6 +339,51 @@
           </div>
           <span class="pro-tag">PRO+</span>
         </div>
+
+        <a href="public/batch-processor.html?task=fact-check" target="_blank" class="tool-card locked" id="toolProofread" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">🔍</div>
+          <div class="tool-info">
+            <h4>Advanced Proofreading</h4>
+            <p>Deep analysis & fact-checking</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
+
+        <a href="public/context-detector.html" target="_blank" class="tool-card locked" id="toolContextual" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">🎯</div>
+          <div class="tool-info">
+            <h4>Context Detector</h4>
+            <p>Context-aware writing suggestions</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="public/writing-profile.html" target="_blank" class="tool-card locked" id="toolProfile" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">👤</div>
+          <div class="tool-info">
+            <h4>Writing Profile</h4>
+            <p>Your personalized writing style</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="analytics-dashboard.html" target="_blank" class="tool-card locked" id="toolAnalytics" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">📊</div>
+          <div class="tool-info">
+            <h4>Analytics Dashboard</h4>
+            <p>Track your writing progress</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="public/team-collaboration.html" target="_blank" class="tool-card locked" id="toolTeam" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">👥</div>
+          <div class="tool-info">
+            <h4>Team Collaboration</h4>
+            <p>Share & review documents</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
       </div>
 
       <!-- AI Status -->

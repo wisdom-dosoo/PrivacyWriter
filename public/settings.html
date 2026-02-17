@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - PrivacyWriter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary: #10b981;
+      --secondary: #3b82f6;
+      --accent: #8b5cf6;
+      --bg: #ffffff;
+      --bg-light: #f3f4f6;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --error: #ef4444;
+      --success: #10b981;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-light);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Header */
+    .header {
+      background: white;
+      padding: 30px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .header-icon {
+      font-size: 2em;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+    
+    .header p {
+      margin: 4px 0 0 0;
+      color: var(--text-light);
+      font-size: 0.9em;
+    }
+    
+    /* Settings Sections */
+    .settings-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .settings-section h2 {
+      margin: 0 0 20px 0;
+      font-size: 1.3em;
+      color: var(--text);
+      border-bottom: 2px solid var(--bg-light);
+      padding-bottom: 12px;
+    }
+    
+    .setting-item {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .setting-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .setting-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .setting-label label {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .setting-description {
+      color: var(--text-light);
+      font-size: 0.9em;
+      margin: 8px 0;
+    }
+    
+    /* Input Controls */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1em;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    
+    /* Toggle Switch */
+    .toggle-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    input[type="checkbox"] {
+      width: 50px;
+      height: 28px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s;
+      position: relative;
+    }
+    
+    input[type="checkbox"]:checked {
+      background: var(--primary);
+    }
+    
+    input[type="checkbox"]:before {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 12px;
+      background: white;
+      top: 2px;
+      left: 2px;
+      transition: left 0.3s;
+    }
+    
+    input[type="checkbox"]:checked:before {
+      left: 24px;
+    }
+    
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 1em;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-light);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+    
+    .btn-danger {
+      background: var(--error);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
+    /* Status Messages */
+    .status-message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .status-message.visible {
+      display: block;
+    }
+    
+    .status-message.success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border-left: 4px solid var(--primary);
+    }
+    
+    .status-message.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border-left: 4px solid var(--error);
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    /* Tabs for Settings */
+    .settings-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .settings-tab {
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      color: var(--text-light);
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.3s;
+    }
+    
+    .settings-tab:hover {
+      color: var(--text);
+    }
+    
+    .settings-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Info Box */
+    .info-box {
+      background: rgba(59, 130, 246, 0.05);
+      border-left: 4px solid var(--secondary);
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 12px 0;
+      font-size: 0.95em;
+      color: var(--text);
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 600px) {
+      .container {
+        padding: 12px;
+      }
+      
+      .settings-section {
+        padding: 16px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-icon">⚙️</div>
+      <div>
+        <h1>Settings</h1>
+        <p>Customize PrivacyWriter to your preferences</p>
+      </div>
+    </div>
+    
+    <div id="statusMessage" class="status-message"></div>
+    
+    <!-- Tabs Navigation -->
+    <div class="settings-tabs">
+      <button class="settings-tab active" data-tab="general">General</button>
+      <button class="settings-tab" data-tab="ai">AI & Models</button>
+      <button class="settings-tab" data-tab="privacy">Privacy & Security</button>
+      <button class="settings-tab" data-tab="cloud">Cloud Sync</button>
+      <button class="settings-tab" data-tab="about">About</button>
+    </div>
+    
+    <!-- General Settings -->
+    <div id="general" class="tab-content active">
+      <div class="settings-section">
+        <h2>⚙️ General Settings</h2>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label for="theme">🎨 Theme</label>
+          </div>
+          <select id="theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto (System)</option>
+          </select>
+          <div class="setting-description">Choose your preferred color scheme</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label for="language">🌐 Language</label>
+          </div>
+          <select id="language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="zh">中文</option>
+            <option value="ja">日本語</option>
+          </select>
+          <div class="setting-description">Interface language (requires refresh)</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>📝 Auto-Save History</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="autoSaveHistory" checked>
+            </div>
+          </div>
+          <div class="setting-description">Automatically save all text processing to history</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>⏰ Show Keyboard Shortcuts</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="showShortcuts" checked>
+            </div>
+          </div>
+          <div class="setting-description">Display keyboard shortcut hints throughout the app</div>
+        </div>
+        
+        <div class="button-group">
+          <button class="btn-primary" id="btnSaveGeneral">💾 Save Changes</button>
+          <button class="btn-secondary" id="btnResetGeneral">↺ Reset to Defaults</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- AI & Models -->
+    <div id="ai" class="tab-content">
+      <div class="settings-section">
+        <h2>🤖 AI Models & APIs</h2>
+        
+        <div class="info-box">
+          <strong>ℹ️ Default:</strong> All processing uses local Chrome APIs (completely private, no data sent)
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label for="claudeApiKey">Claude API Key (Optional)</label>
+          </div>
+          <input type="password" id="claudeApiKey" placeholder="sk-..." />
+          <div class="setting-description">
+            Add Claude API key for enhanced generation (costs apply). <a href="https://console.anthropic.com" target="_blank">Get API key →</a>
+          </div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>🔒 Use Claude API for Premium Models</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="useClaudeAPI">
+            </div>
+          </div>
+          <div class="setting-description">Enable optional Claude API for better quality (requires API key)</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>📶 Local Processing Only</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="localOnly" checked>
+            </div>
+          </div>
+          <div class="setting-description">Force all processing locally (no external API calls ever)</div>
+        </div>
+        
+        <div class="button-group">
+          <button class="btn-primary" id="btnSaveAI">💾 Save Changes</button>
+          <button class="btn-secondary" id="btnTestAI">🧪 Test AI Connection</button>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h2>📊 Available Models</h2>
+        <div id="modelStatus"></div>
+      </div>
+    </div>
+    
+    <!-- Privacy & Security -->
+    <div id="privacy" class="tab-content">
+      <div class="settings-section">
+        <h2>🔒 Privacy & Security</h2>
+        
+        <div class="info-box">
+          <strong>✅ Your Privacy is Protected:</strong> All text processing happens on your device. Zero data sent to external servers unless you enable Claude API and it's necessary for the operation.
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>🔐 Encrypt Local Storage</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="encryptStorage" checked>
+            </div>
+          </div>
+          <div class="setting-description">Encrypt sensitive data in browser storage (recommended)</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>📵 Disable Analytics</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="disableAnalytics">
+            </div>
+          </div>
+          <div class="setting-description">Opt-out of anonymous usage statistics</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label for="sessionTimeout">⏱️ Session Timeout (minutes)</label>
+          </div>
+          <input type="number" id="sessionTimeout" min="5" max="480" value="30" />
+          <div class="setting-description">Auto-logout after inactivity (0 = never)</div>
+        </div>
+        
+        <div class="button-group">
+          <button class="btn-primary" id="btnSavePrivacy">💾 Save Changes</button>
+          <button class="btn-danger" id="btnClearAllData">🗑️ Clear All Data</button>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h2>🧹 Data Management</h2>
+        
+        <div class="button-group">
+          <button class="btn-secondary" id="btnExportData">📤 Export All Data</button>
+          <button class="btn-secondary" id="btnClearHistory">🗂️ Clear History</button>
+          <button class="btn-secondary" id="btnClearCache">💾 Clear Cache</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Cloud Sync -->
+    <div id="cloud" class="tab-content">
+      <div class="settings-section">
+        <h2>☁️ Cloud Sync Settings</h2>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label for="cloudUrl">Cloud Sync URL (Optional)</label>
+          </div>
+          <input type="text" id="cloudUrl" placeholder="https://your-server.com/sync" />
+          <div class="setting-description">Your server endpoint for cloud backup (leave blank for local-only)</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label for="syncPassword">🔐 Sync Password</label>
+          </div>
+          <input type="password" id="syncPassword" placeholder="Password for encryption" />
+          <div class="setting-description">Password to encrypt cloud backups</div>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-label">
+            <label>🔄 Auto Sync</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="autoSync">
+            </div>
+          </div>
+          <div class="setting-description">Automatically sync to cloud daily</div>
+        </div>
+        
+        <div class="button-group">
+          <button class="btn-primary" id="btnSaveCloud">💾 Save Changes</button>
+          <button class="btn-secondary" id="btnTestCloud">🧪 Test Connection</button>
+          <button class="btn-secondary" id="btnPerformSync">🔄 Sync Now</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- About -->
+    <div id="about" class="tab-content">
+      <div class="settings-section">
+        <h2>ℹ️ About PrivacyWriter</h2>
+        
+        <div class="setting-item">
+          <p><strong>PrivacyWriter</strong> is a privacy-first AI writing assistant for Chrome.</p>
+          <p style="margin-top: 10px;">All processing happens locally on your device. No data is ever sent to external servers unless you explicitly enable optional cloud features.</p>
+        </div>
+        
+        <div class="setting-item">
+          <label><strong>Version:</strong></label>
+          <p id="versionInfo">2.0.0</p>
+        </div>
+        
+        <div class="setting-item">
+          <label><strong>Privacy Policy:</strong></label>
+          <a href="https://privacy.example.com" target="_blank" style="color: var(--primary); text-decoration: none;">Read our Privacy Policy →</a>
+        </div>
+        
+        <div class="setting-item">
+          <label><strong>Terms of Service:</strong></label>
+          <a href="https://terms.example.com" target="_blank" style="color: var(--primary); text-decoration: none;">Read our Terms →</a>
+        </div>
+        
+        <div class="setting-item">
+          <label><strong>Support:</strong></label>
+          <a href="mailto:support@example.com" style="color: var(--primary); text-decoration: none;">support@example.com →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrivacyWriter - Privacy-First AI Writing Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-white">
+    <!-- Navigation -->
+    <nav class="fixed w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="site-logo">
+                <div class="mark">PW</div>
+                <span class="font-bold text-xl text-gray-900">PrivacyWriter</span>
+            </div>
+            <div class="hidden md:flex gap-8 items-center">
+                <a href="features.html" class="text-gray-600 hover:text-gray-900 transition">Features</a>
+                <a href="#how-it-works" class="text-gray-600 hover:text-gray-900 transition">How It Works</a>
+                <a href="pricing.html" class="text-gray-600 hover:text-gray-900 transition">Pricing</a>
+                <a href="upgrade.html" class="px-6 py-2 btn-primary rounded-lg hover:opacity-90 transition">Get Started</a>
+            </div>
+            <button class="md:hidden text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-40 pb-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h1 class="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                        Your AI Writing Assistant That Respects Your Privacy
+                    </h1>
+                    <p class="text-xl text-gray-600 mb-8">
+                        100% local processing. Zero data collection. Powerful writing tools powered by Chrome's built-in AI. Transform your writing instantly.
+                    </p>
+                    <div class="flex gap-4 flex-wrap">
+                        <a href="upgrade.html" class="gradient-primary text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                            Add to Chrome
+                        </a>
+                        <a href="#features" class="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-900 hover:border-gray-900 transition">
+                            Learn More
+                        </a>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl h-96 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">✍️</div>
+                        <p class="text-gray-600">AI-powered writing enhancement</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Badges -->
+    <section class="bg-gray-50 py-12 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-gray-900 mb-2">100%</div>
+                    <p class="text-gray-600">Local Processing</p>
+                    <p class="text-sm text-gray-500 mt-2">Your data never leaves your device</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-gray-900 mb-2">25+</div>
+                    <p class="text-gray-600">Writing Tools</p>
+                    <p class="text-sm text-gray-500 mt-2">Grammar, rewriting, summarizing & more</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-gray-900 mb-2">✓</div>
+                    <p class="text-gray-600">Free Forever</p>
+                    <p class="text-sm text-gray-500 mt-2">Essential features always free</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">Powerful Writing Features</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Feature Card 1 -->
+                <div class="gradient-hover p-8 border border-gray-200 rounded-xl">
+                    <div class="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center text-white text-xl mb-4">✓</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Grammar & Spelling</h3>
+                    <p class="text-gray-600">Real-time detection and correction of grammar mistakes, typos, and spelling errors with explanations.</p>
+                </div>
+
+                <!-- Feature Card 2 -->
+                <div class="gradient-hover p-8 border border-gray-200 rounded-xl">
+                    <div class="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center text-white text-xl mb-4">✨</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Text Rewriting</h3>
+                    <p class="text-gray-600">Rewrite any text in 4 different styles: professional, casual, shorter, or longer. Keep your message, change the tone.</p>
+                </div>
+
+                <!-- Feature Card 3 -->
+                <div class="gradient-hover p-8 border border-gray-200 rounded-xl">
+                    <div class="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center text-white text-xl mb-4">📋</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Summarization</h3>
+                    <p class="text-gray-600">Condense long texts into concise summaries while preserving the key information and context.</p>
+                </div>
+
+                <!-- Feature Card 4 -->
+                <div class="gradient-hover p-8 border border-gray-200 rounded-xl">
+                    <div class="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center text-white text-xl mb-4">🌍</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Translation</h3>
+                    <p class="text-gray-600">Translate text into 6+ languages instantly. Perfect for international communication and content creation.</p>
+                </div>
+
+                <!-- Feature Card 5 -->
+                <div class="gradient-hover p-8 border border-gray-200 rounded-xl">
+                    <div class="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center text-white text-xl mb-4">💡</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Smart Suggestions</h3>
+                    <p class="text-gray-600">Get intelligent suggestions for improving clarity, tone, and impact of your writing instantly.</p>
+                </div>
+
+                <!-- Feature Card 6 -->
+                <div class="gradient-hover p-8 border border-gray-200 rounded-xl">
+                    <div class="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center text-white text-xl mb-4">⚡</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Works Everywhere</h3>
+                    <p class="text-gray-600">Enhance your writing on Gmail, LinkedIn, Twitter, and any website. One tool, unlimited possibilities.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="bg-gray-50 py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">How It Works</h2>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
+                    <h3 class="font-bold text-gray-900 mb-2">Install</h3>
+                    <p class="text-gray-600 text-sm">Add PrivacyWriter to your Chrome browser in seconds.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">2</div>
+                    <h3 class="font-bold text-gray-900 mb-2">Select Text</h3>
+                    <p class="text-gray-600 text-sm">Highlight any text on any website you want to improve.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">3</div>
+                    <h3 class="font-bold text-gray-900 mb-2">Choose Tool</h3>
+                    <p class="text-gray-600 text-sm">Pick from grammar check, rewrite, summarize, or translate.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">4</div>
+                    <h3 class="font-bold text-gray-900 mb-2">Get Results</h3>
+                    <p class="text-gray-600 text-sm">Instantly improve your text with AI-powered enhancements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Section -->
+    <section class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-12 border border-purple-200">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-6">Privacy First, Always</h2>
+                        <ul class="space-y-4">
+                            <li class="flex gap-3">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span class="text-gray-600">All processing happens locally on your device</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span class="text-gray-600">Zero data collection or sharing</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span class="text-gray-600">No accounts or logins required for free tier</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span class="text-gray-600">Uses Chrome's built-in AI model</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-green-500 font-bold">✓</span>
+                                <span class="text-gray-600">Transparent, open-source philosophy</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-xl p-8 shadow-lg">
+                        <div class="text-4xl mb-4">🔒</div>
+                        <p class="text-gray-600 mb-4">Your writing is your own. We don't store it, analyze it, or use it to train AI models. Complete privacy and control.</p>
+                        <a href="features.html" class="text-purple-600 font-semibold hover:text-purple-700 transition">Learn about security →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="gradient-primary text-white py-16 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-6">Ready to Transform Your Writing?</h2>
+            <p class="text-xl opacity-90 mb-8">Join thousands of writers using PrivacyWriter to enhance their writing with AI, while keeping their privacy intact.</p>
+            <div class="flex gap-4 justify-center flex-wrap">
+                <a href="upgrade.html" class="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                    Add to Chrome - Free
+                </a>
+                <a href="pricing.html" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
+                    View Pricing
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold">PW</div>
+                        <span class="font-bold text-white">PrivacyWriter</span>
+                    </div>
+                    <p class="text-sm">Privacy-first AI writing assistant.</p>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#features" class="hover:text-white transition">Features</a></li>
+                        <li><a href="pricing.html" class="hover:text-white transition">Pricing</a></li>
+                        <li><a href="upgrade.html" class="hover:text-white transition">Download</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition">About</a></li>
+                        <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition">Privacy</a></li>
+                        <li><a href="#" class="hover:text-white transition">Terms</a></li>
+                        <li><a href="#" class="hover:text-white transition">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 pt-8 text-center text-sm">
+                <p>&copy; 2025 PrivacyWriter. Built with privacy in mind.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -2,6 +2,7 @@
 // Handles: AI initialization, context menus, keyboard shortcuts, Pro status
 
 importScripts('pro-features.js');
+importScripts('pro-advanced-features.js');
 importScripts('pro-plus-features.js');
 importScripts('fallback-engine.js');
 importScripts('claude-fallback.js');
@@ -294,6 +295,44 @@ function createContextMenus() {
   });
 }
 
+  /**
+   * Perform Cloud Sync: prepare payload and optionally upload to configured endpoint.
+   */
+  async function performCloudSync() {
+    try {
+      const payload = await prepareCloudSync();
+
+      // Save local snapshot for user to download or restore later
+      await chrome.storage.local.set({ lastCloudExport: { payload, timestamp: Date.now() } });
+
+      // If user configured a cloud URL, attempt upload
+      const { settings = {} } = await chrome.storage.local.get('settings');
+      const uploadUrl = settings?.cloudSyncUrl;
+      const uploadToken = settings?.cloudSyncToken;
+
+      if (uploadUrl) {
+        try {
+          const resp = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, uploadToken ? { 'Authorization': `Bearer ${uploadToken}` } : {}),
+            body: JSON.stringify({ payload, meta: { extension: 'PrivacyWriter', timestamp: Date.now() } })
+          });
+
+          if (!resp.ok) throw new Error('Upload failed: ' + resp.statusText);
+
+          return { success: true, status: 'uploaded', timestamp: Date.now() };
+        } catch (e) {
+          // Upload failed, but local export exists
+          return { success: true, status: 'local-saved-upload-failed', timestamp: Date.now(), error: e.message };
+        }
+      }
+
+      return { success: true, status: 'local-saved', timestamp: Date.now() };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }
+
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const text = info.selectionText;
@@ -520,7 +559,8 @@ async function rewriteText(text, style) {
     throw new Error('Text is too long. Maximum 50,000 characters allowed.');
   }
 
-  const validStyles = ['more-formal', 'more-casual', 'shorter', 'longer'];
+  // Include Pro tones: executive, academic, persuasive, empathetic, humorous, critical
+  const validStyles = ['more-formal', 'more-casual', 'shorter', 'longer', 'executive', 'academic', 'persuasive', 'empathetic', 'humorous', 'critical'];
   if (!validStyles.includes(style)) {
     throw new Error('Invalid rewrite style specified.');
   }
@@ -531,6 +571,12 @@ async function rewriteText(text, style) {
   }
 
   const { apiKeys = {}, isPro } = await chrome.storage.local.get(['apiKeys', 'isPro']);
+  
+  // Check Pro-only tones
+  const proOnlyTones = ['executive', 'academic', 'persuasive', 'empathetic', 'humorous', 'critical'];
+  if (proOnlyTones.includes(style) && !isPro) {
+    throw new Error('This tone requires Pro. Upgrade to unlock all 10+ writing tones.');
+  }
 
   try {
     // TIER 1: Try Rewriter API (Chrome native - fastest)
@@ -566,7 +612,13 @@ async function rewriteText(text, style) {
           'more-formal': 'Rewrite this text in a more professional, formal tone:',
           'more-casual': 'Rewrite this text in a more casual, friendly tone:',
           'shorter': 'Rewrite this text to be more concise while keeping the meaning:',
-          'longer': 'Expand this text with more detail while keeping the same meaning:'
+          'longer': 'Expand this text with more detail while keeping the same meaning:',
+          'executive': 'Rewrite this in an executive summary tone - decisive, authoritative, results-focused:',
+          'academic': 'Rewrite this in academic scholarly tone - analytical, evidence-based, formal:',
+          'persuasive': 'Rewrite this in a persuasive marketing tone - compelling, benefit-focused, engaging:',
+          'empathetic': 'Rewrite this in an empathetic warm tone - compassionate, understanding, supportive:',
+          'humorous': 'Rewrite this with humor and lightness while maintaining the core message:',
+          'critical': 'Rewrite this in a critical analytical tone - questioning, evaluative, examining strengths and weaknesses:'
         };
 
         const response = await promptSession.prompt(
@@ -1045,11 +1097,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
           try {
             let processor;
-            if (request.task === 'grammar') processor = checkGrammar;
-            else if (request.task === 'rewrite') processor = (t) => rewriteText(t, request.style || 'more-formal');
-            else if (request.task === 'summarize') processor = summarizeText;
-            else if (request.task === 'translate') processor = (t) => translateText(t, request.targetLang);
-            else throw new Error('Invalid batch task');
+            if (request.task === 'grammar') {
+              processor = checkGrammar;
+            } else if (request.task === 'rewrite') {
+              processor = (t) => rewriteText(t, request.style || 'more-formal');
+            } else if (request.task === 'summarize') {
+              processor = summarizeText;
+            } else if (request.task === 'translate') {
+              processor = (t) => translateText(t, request.targetLang);
+            } else if (request.task === 'generate') {
+              // Content generation with template
+              processor = async (t) => {
+                const result = await generateContent(request.template, { topic: t, context: '' });
+                return result;
+              };
+            } else if (request.task === 'fact-check') {
+              // Fact-checking task
+              processor = async (t) => {
+                const result = await checkFacts(t);
+                return JSON.stringify(result);
+              };
+            } else if (request.task === 'style-guide') {
+              // Style guide compliance check
+              processor = (t) => {
+                const result = analyzeStyleGuide(t, null);
+                return `Style Score: ${result.score}/100\nIssues Found: ${result.issues.length}\n${result.issues.map(i => `- ${i.message}`).join('\n')}`;
+              };
+            } else {
+              throw new Error('Invalid batch task');
+            }
 
             const batchResults = await processBatchItems(request.items, processor);
             sendResponse({ success: true, results: batchResults });
@@ -1064,6 +1140,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true, status: syncResult.status, timestamp: syncResult.timestamp });
           } else {
             sendResponse({ success: false, error: syncResult.error });
+          }
+          break;
+
+        case 'getCloudPayload':
+          try {
+            const payload = await prepareCloudSync();
+            sendResponse({ success: true, payload });
+          } catch (e) {
+            sendResponse({ success: false, error: e.message });
+          }
+          break;
+
+        case 'restoreCloudPayload':
+          try {
+            const incoming = request.payload;
+            // Only allow known keys to be restored
+            const allowed = {};
+            if (incoming.settings) allowed.settings = incoming.settings;
+            if (incoming.history) allowed.history = incoming.history;
+            if (incoming.styleGuides) allowed.styleGuides = incoming.styleGuides;
+            if (incoming.analytics) allowed.analytics = incoming.analytics;
+            if (incoming.usageToday) allowed.usageToday = incoming.usageToday;
+
+            await chrome.storage.local.set(allowed);
+            // Update a timestamp for sync
+            await chrome.storage.local.set({ lastCloudRestore: Date.now() });
+            sendResponse({ success: true });
+          } catch (e) {
+            sendResponse({ success: false, error: e.message });
           }
           break;
 
@@ -1109,10 +1214,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         case 'generateContent':
           try {
-            const genResult = await generateContent(request.template, request.params);
+            const template = request.template || request.params?.template;
+            const params = request.params || { topic: request.topic, context: request.context };
+            const genResult = await generateContent(template, params);
             sendResponse({ success: true, result: genResult });
           } catch (error) {
             sendResponse({ success: false, error: error.message || 'Generation failed' });
+          }
+          break;
+
+        case 'buildWritingProfile':
+          try {
+            const profile = await buildWritingProfile();
+            sendResponse({ success: true, profile });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Profile building failed' });
           }
           break;
 
@@ -1244,6 +1360,142 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'updateModelStatus':
           // Just log for now, could store in chrome.storage
           console.log(`Model ${request.task} status: ${request.status}`, request.model);
+          break;
+
+        // ===== NEW PRO ADVANCED FEATURES =====
+
+        // Writing Style Profile
+        case 'buildWritingProfile':
+          try {
+            const profile = await buildWritingProfile();
+            sendResponse({ success: true, data: profile });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Profile building failed' });
+          }
+          break;
+
+        case 'getWritingProfile':
+          try {
+            const profile = await getWritingProfile();
+            sendResponse({ success: true, data: profile });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Failed to get profile' });
+          }
+          break;
+
+        // History Management
+        case 'searchHistory':
+          try {
+            const results = await searchHistory(request.query, request.filters);
+            sendResponse({ success: true, results });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case 'exportHistory':
+          try {
+            const data = await exportHistory(request.format);
+            sendResponse({ success: true, data });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // Advanced Proofreading
+        case 'advancedProofread':
+          try {
+            const proofResult = await advancedProofread(request.text);
+            sendResponse({ success: true, result: proofResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case 'factCheckText':
+          try {
+            const factCheckResult = await factCheckText(request.text);
+            sendResponse({ success: true, result: factCheckResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // Contextual Writing Assistant
+        case 'detectContext':
+          try {
+            const contextResult = await detectContext(request.text, request.userSelectedContext);
+            await updateAnalytics('context-detection', request.text.split(/\s+/).length);
+            sendResponse({ success: true, data: contextResult });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message || 'Context detection failed' });
+          }
+          break;
+
+        // Analytics Dashboard
+        case 'buildAnalyticsDashboard':
+          try {
+            const dashboard = await buildAnalyticsDashboard();
+            sendResponse({ success: true, data: dashboard });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // Team Collaboration
+        case 'createSharedDocument':
+          try {
+            const doc = await createSharedDocument(request.title, request.content, request.teamMembers);
+            sendResponse({ success: true, document: doc });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case 'addDocumentComment':
+          try {
+            const comment = await addDocumentComment(request.docId, request.text, request.position);
+            sendResponse({ success: true, comment });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case 'requestReview':
+          try {
+            const doc = await requestReview(request.docId, request.reviewers);
+            sendResponse({ success: true, document: doc });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case 'approveDocument':
+          try {
+            const doc = await approveDocument(request.docId, 'current_user', request.feedback);
+            sendResponse({ success: true, document: doc });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        // Team Writing Standards
+        case 'createTeamStyleGuide':
+          try {
+            const guide = await createTeamStyleGuide(request.name, request.rules);
+            sendResponse({ success: true, guide });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
+          break;
+
+        case 'enforceTeamStandards':
+          try {
+            const result = await enforceTeamStandardsOnDoc(request.content, request.guideId);
+            sendResponse({ success: true, result });
+          } catch (error) {
+            sendResponse({ success: false, error: error.message });
+          }
           break;
 
         default:

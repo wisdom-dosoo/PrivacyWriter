@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Generator - PrivacyWriter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #8b5cf6 0%, #667eea 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #8b5cf6 0%, #667eea 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { font-size: 2em; margin-bottom: 10px; }
+    .content { padding: 30px; }
+    .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .template-card { 
+      padding: 15px; 
+      border: 2px solid #e0e0e0; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      transition: all 0.3s;
+      background: #fafafa;
+    }
+    .template-card:hover { border-color: #8b5cf6; background: #f5f0ff; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(139, 92, 246, 0.2); }
+    .template-card.selected { border-color: #8b5cf6; background: #f5f0ff; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); }
+    .template-card h3 { margin: 0 0 8px 0; font-size: 1em; color: #333; }
+    .template-card p { margin: 0; font-size: 0.85em; color: #666; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; }
+    textarea { 
+      width: 100%; 
+      padding: 12px; 
+      border: 1px solid #ddd; 
+      border-radius: 6px; 
+      font-family: 'Courier New', monospace; 
+      font-size: 14px;
+      resize: vertical;
+      min-height: 200px;
+    }
+    input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+    .button-group { display: flex; gap: 10px; margin-top: 20px; }
+    button { 
+      background: linear-gradient(135deg, #8b5cf6, #667eea); 
+      color: white; 
+      border: none; 
+      padding: 12px 24px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-weight: 600;
+      transition: all 0.3s; 
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .secondary-btn { background: #667eea; }
+    .danger-btn { background: #f44336; }
+    .result-box { 
+      margin-top: 20px; 
+      padding: 15px; 
+      background: #f9f9f9; 
+      border-left: 4px solid #8b5cf6; 
+      border-radius: 4px;
+      display: none;
+    }
+    .result-box.visible { display: block; }
+    .result-box h3 { margin-bottom: 10px; color: #333; }
+    .result-content { 
+      padding: 15px; 
+      background: white; 
+      border: 1px solid #e0e0e0; 
+      border-radius: 4px; 
+      max-height: 400px; 
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .result-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .status-message { padding: 12px; border-radius: 4px; margin-bottom: 15px; display: none; }
+    .status-message.visible { display: block; }
+    .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .loading { opacity: 0.6; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✨ Content Generator</h1>
+      <p>Create professional content with AI-powered templates</p>
+    </div>
+
+    <div class="content">
+      <div class="status-message" id="statusMessage"></div>
+
+      <div class="form-group">
+        <h2 style="margin-bottom: 15px; color: #333;">Select Template</h2>
+        <div class="template-grid" id="templateGrid"></div>
+      </div>
+
+      <div id="parameterForm" style="display: none;">
+        <div class="form-group">
+          <label for="topic">📝 Main Topic / Idea</label>
+          <textarea id="topic" placeholder="Enter the main topic or idea you want content about..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="context">🎯 Context (Optional)</label>
+          <textarea id="context" placeholder="Add any additional context, audience, tone preferences, or specific requirements..." style="min-height: 100px;"></textarea>
+        </div>
+
+        <div class="button-group">
+          <button onclick="generateContent()" id="generateBtn">🚀 Generate Content</button>
+          <button onclick="clearForm()" class="secondary-btn">Clear Form</button>
+        </div>
+      </div>
+
+      <div class="result-box" id="resultBox">
+        <h3>Generated Content</h3>
+        <div class="result-content" id="resultContent"></div>
+        <div class="result-actions">
+          <button onclick="copyResult()" class="secondary-btn">📋 Copy to Clipboard</button>
+          <button onclick="downloadResult()" class="secondary-btn">📥 Download</button>
+          <button onclick="useInBatch()" class="secondary-btn">➕ Use in Batch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="content-generator.js"></script>
+</body>
+</html>

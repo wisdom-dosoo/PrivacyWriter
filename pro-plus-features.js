@@ -65,7 +65,7 @@ function analyzeStyleGuide(text, customGuide = null) {
 
   return {
     score: Math.max(0, 100 - (issues.length * 5)),
-    issues
+    issues 
   };
 }
 

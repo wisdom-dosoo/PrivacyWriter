@@ -152,14 +152,14 @@
           </div>
         </div>
         
-        <div class="tool-card locked" id="toolCoach">
+        <button class="tool-card locked" id="toolCoach" onclick="runWritingCoach()" style="cursor: pointer;">
           <div class="tool-icon">🎓</div>
           <div class="tool-info">
             <h4>Writing Coach</h4>
             <p>Get feedback on tone & clarity</p>
           </div>
           <span class="pro-tag">PRO</span>
-        </div>
+        </button>
         
         <div class="tool-card locked" id="toolCustom">
           <div class="tool-icon">⚡</div>
@@ -170,14 +170,14 @@
           <span class="pro-tag">PRO</span>
         </div>
         
-        <div class="tool-card locked" id="toolHistory">
+        <a href="public/history.html" target="_blank" class="tool-card locked" id="toolHistory" style="text-decoration: none; color: inherit; display: flex;">
           <div class="tool-icon">📚</div>
           <div class="tool-info">
             <h4>History & Favorites</h4>
             <p>Access your past generations</p>
           </div>
           <span class="pro-tag">PRO</span>
-        </div>
+        </a>
         
         <a href="public/batch-processor.html" target="_blank" class="tool-card locked" id="toolBatch" style="text-decoration: none; color: inherit; display: flex;">
           <div class="tool-icon">📑</div>
@@ -197,6 +197,24 @@
           <span class="pro-tag">PRO+</span>
         </a>
 
+        <a href="public/content-generator.html" target="_blank" class="tool-card locked" id="toolGenerator" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">✨</div>
+          <div class="tool-info">
+            <h4>Content Generator</h4>
+            <p>Create with AI-powered templates</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="public/cloud-sync.html" target="_blank" class="tool-card locked" id="toolCloudSync" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">☁️</div>
+          <div class="tool-info">
+            <h4>Cloud Sync</h4>
+            <p>Backup & restore encrypted data</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
+
         <div class="tool-card locked" id="toolApi">
           <div class="tool-icon">🔑</div>
           <div class="tool-info">
@@ -205,6 +223,51 @@
           </div>
           <span class="pro-tag">PRO+</span>
         </div>
+
+        <a href="public/batch-processor.html?task=fact-check" target="_blank" class="tool-card locked" id="toolProofread" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">🔍</div>
+          <div class="tool-info">
+            <h4>Advanced Proofreading</h4>
+            <p>Deep analysis & fact-checking</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
+
+        <div class="tool-card locked" id="toolContextual">
+          <div class="tool-icon">🎯</div>
+          <div class="tool-info">
+            <h4>Contextual Assistant</h4>
+            <p>Context-aware writing suggestions</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </div>
+
+        <a href="public/writing-profile.html" target="_blank" class="tool-card locked" id="toolProfile" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">👤</div>
+          <div class="tool-info">
+            <h4>Writing Profile</h4>
+            <p>Your personalized writing style</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="analytics-dashboard.html" target="_blank" class="tool-card locked" id="toolAnalytics" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">📊</div>
+          <div class="tool-info">
+            <h4>Analytics Dashboard</h4>
+            <p>Track your writing progress</p>
+          </div>
+          <span class="pro-tag">PRO</span>
+        </a>
+
+        <a href="public/team-collaboration.html" target="_blank" class="tool-card locked" id="toolTeam" style="text-decoration: none; color: inherit; display: flex;">
+          <div class="tool-icon">👥</div>
+          <div class="tool-info">
+            <h4>Team Collaboration</h4>
+            <p>Share & review documents</p>
+          </div>
+          <span class="pro-tag">PRO+</span>
+        </a>
       </div>
 
       <!-- AI Status -->

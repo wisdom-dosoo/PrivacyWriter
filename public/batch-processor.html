@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Processor - PrivacyWriter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { font-size: 2em; margin-bottom: 10px; }
+    .content { padding: 30px; }
+    .section { margin-bottom: 30px; }
+    .section h2 { color: #333; margin-bottom: 15px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+    input, select, textarea { width: 100%;  padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; }
+    button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .button-group { display: flex; gap: 10px; margin-top: 20px; }
+    .file-list { list-style: none; }
+    .file-item { padding: 12px; background: #f5f5f5; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .progress-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; margin-top: 10px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
+    .result-item { padding: 15px; background: #f9f9f9; border-left: 3px solid #667eea; border-radius: 4px; margin-bottom: 10px; }
+    .status-badge { padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
+    .status-success { background: #d4edda; color: #155724; }
+    .status-error { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📑 Batch Processor</h1>
+      <p>Process multiple documents simultaneously with consistent style</p>
+    </div>
+
+    <div class="content">
+      <div class="section">
+        <h2>📤 Upload Files</h2>
+        <div id="dragZone" style="border: 2px dashed #667eea; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s; background: #fafafa;">
+          <p style="font-size: 2em; margin-bottom: 10px;">📁</p>
+          <h3 style="color: #333; margin-bottom: 8px;">Drag files here or click to select</h3>
+          <p style="color: #999; margin: 0;">Supports: .txt, .md, .html, .docx (up to 10 files, 5MB each)</p>
+          <input type="file" id="fileInput" multiple accept=".txt,.md,.html,.docx" style="display: none;">
+        </div>
+        <ul id="fileList" class="file-list" style="margin-top: 15px;">
+          <li style="padding: 20px; text-align: center; color: #999;">No files selected</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>⚙️ Processing Settings</h2>
+        <div class="form-group">
+          <label for="processTask">Select Task</label>
+          <select id="processTask">
+            <option value="grammar">✏️ Grammar Check</option>
+            <option value="rewrite">🔄 Rewrite</option>
+            <option value="summarize">📋 Summarize</option>
+            <option value="translate">🌐 Translate</option>
+            <option value="generate">✨ Generate Content</option>
+            <option value="fact-check">🔍 Fact Check</option>
+            <option value="style-guide">📏 Style Guide Check</option>
+          </select>
+        </div>
+
+        <div id="rewriteOptions" style="display: none;">
+          <label for="rewriteStyle">Rewrite Style</label>
+          <select id="rewriteStyle">
+            <option value="more-formal">💼 Professional</option>
+            <option value="more-casual">😊 Casual</option>
+            <option value="shorter">📝 Shorter</option>
+            <option value="longer">📄 Longer</option>
+            <option value="executive">👔 Executive</option>
+            <option value="academic">🎓 Academic</option>
+            <option value="persuasive">💡 Persuasive</option>
+            <option value="empathetic">❤️ Empathetic</option>
+            <option value="humorous">😂 Humorous</option>
+            <option value="critical">🎯 Critical</option>
+          </select>
+        </div>
+
+        <div id="translateOptions" style="display: none;">
+          <label for="targetLanguage">Target Language</label>
+          <select id="targetLanguage">
+            <option value="">-- Select Language --</option>
+            <optgroup label="Free Tier">
+              <option value="es">🇪🇸 Spanish</option>
+              <option value="fr">🇫🇷 French</option>
+              <option value="de">🇩🇪 German</option>
+              <option value="zh">🇨🇳 Chinese</option>
+              <option value="ja">🇯🇵 Japanese</option>
+              <option value="pt">🇵🇹 Portuguese</option>
+            </optgroup>
+            <optgroup label="Pro Languages (50+ Available)">
+              <option value="af">🇿🇦 Afrikaans</option>
+              <option value="sq">🇦🇱 Albanian</option>
+              <option value="am">🇪🇹 Amharic</option>
+              <option value="ar">🇸🇦 Arabic</option>
+              <option value="hy">🇦🇲 Armenian</option>
+              <option value="az">🇦🇿 Azerbaijani</option>
+              <option value="eu">Basque</option>
+              <option value="be">🇧🇾 Belarusian</option>
+              <option value="bn">🇧🇩 Bengali</option>
+              <option value="bs">Bosnian</option>
+              <option value="bg">🇧🇬 Bulgarian</option>
+              <option value="ca">Catalan</option>
+              <option value="ceb">Cebuano</option>
+              <option value="ny">Chichewa</option>
+              <option value="co">Corsican</option>
+              <option value="hr">🇭🇷 Croatian</option>
+              <option value="cs">🇨🇿 Czech</option>
+              <option value="da">🇩🇰 Danish</option>
+              <option value="nl">🇳🇱 Dutch</option>
+              <option value="eo">Esperanto</option>
+              <option value="et">🇪🇪 Estonian</option>
+              <option value="tl">🇵🇭 Filipino</option>
+              <option value="fi">🇫🇮 Finnish</option>
+              <option value="fy">Frisian</option>
+              <option value="gl">Galician</option>
+              <option value="ka">🇬🇪 Georgian</option>
+              <option value="el">🇬🇷 Greek</option>
+              <option value="gu">Gujarati</option>
+              <option value="ht">Haitian Creole</option>
+              <option value="ha">Hausa</option>
+              <option value="haw">Hawaiian</option>
+              <option value="iw">🇮🇱 Hebrew</option>
+              <option value="hi">🇮🇳 Hindi</option>
+              <option value="hmn">Hmong</option>
+              <option value="hu">🇭🇺 Hungarian</option>
+              <option value="is">🇮🇸 Icelandic</option>
+              <option value="ig">Igbo</option>
+              <option value="id">🇮🇩 Indonesian</option>
+              <option value="ga">🇮🇪 Irish</option>
+              <option value="it">🇮🇹 Italian</option>
+              <option value="jw">Javanese</option>
+              <option value="kn">Kannada</option>
+              <option value="kk">🇰🇿 Kazakh</option>
+              <option value="km">🇰🇭 Khmer</option>
+              <option value="ko">🇰🇷 Korean</option>
+              <option value="ku">Kurdish</option>
+              <option value="ky">🇰🇬 Kyrgyz</option>
+              <option value="lo">🇱🇦 Lao</option>
+              <option value="la">Latin</option>
+              <option value="lv">🇱🇻 Latvian</option>
+              <option value="lt">🇱🇹 Lithuanian</option>
+              <option value="lb">Luxembourgish</option>
+              <option value="mk">🇲🇰 Macedonian</option>
+              <option value="mg">🇲🇬 Malagasy</option>
+              <option value="ms">🇲🇾 Malay</option>
+              <option value="ml">Malayalam</option>
+              <option value="mt">🇲🇹 Maltese</option>
+              <option value="mi">🇳🇿 Maori</option>
+              <option value="mr">Marathi</option>
+              <option value="mn">🇲🇳 Mongolian</option>
+              <option value="my">🇲🇲 Myanmar</option>
+              <option value="ne">🇳🇵 Nepali</option>
+              <option value="no">🇳🇴 Norwegian</option>
+              <option value="ps">🇦🇫 Pashto</option>
+              <option value="fa">🇮🇷 Persian</option>
+              <option value="pl">🇵🇱 Polish</option>
+              <option value="pa">Punjabi</option>
+              <option value="ro">🇷🇴 Romanian</option>
+              <option value="ru">🇷🇺 Russian</option>
+              <option value="sm">Samoan</option>
+              <option value="gd">Scots Gaelic</option>
+              <option value="sr">🇷🇸 Serbian</option>
+              <option value="st">Sesotho</option>
+              <option value="sn">Shona</option>
+              <option value="sd">Sindhi</option>
+              <option value="si">🇱🇰 Sinhala</option>
+              <option value="sk">🇸🇰 Slovak</option>
+              <option value="sl">🇸🇮 Slovenian</option>
+              <option value="so">🇸🇴 Somali</option>
+              <option value="su">Sundanese</option>
+              <option value="sw">🇹🇿 Swahili</option>
+              <option value="sv">🇸🇪 Swedish</option>
+              <option value="tg">🇹🇯 Tajik</option>
+              <option value="ta">Tamil</option>
+              <option value="te">Telugu</option>
+              <option value="th">🇹🇭 Thai</option>
+              <option value="tr">🇹🇷 Turkish</option>
+              <option value="uk">🇺🇦 Ukrainian</option>
+              <option value="ur">Urdu</option>
+              <option value="uz">🇺🇿 Uzbek</option>
+              <option value="vi">🇻🇳 Vietnamese</option>
+              <option value="cy">🇬🇧 Welsh</option>
+              <option value="xh">Xhosa</option>
+              <option value="yi">Yiddish</option>
+              <option value="yo">Yoruba</option>
+              <option value="zu">Zulu</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div id="generateOptions" style="display: none;">
+          <label for="contentTemplate">Content Template</label>
+          <select id="contentTemplate">
+            <option value="email-professional">📧 Professional Email</option>
+            <option value="email-complaint">⚠️ Complaint Email</option>
+            <option value="email-request">📨 Request Email</option>
+            <option value="email-thank-you">🙏 Thank You Email</option>
+            <option value="blog-intro">📖 Blog Post Intro</option>
+            <option value="article-headline">📰 Article Headlines</option>
+            <option value="linkedin-post">💼 LinkedIn Post</option>
+            <option value="twitter-thread">🐦 Twitter Thread</option>
+            <option value="cover-letter">💌 Cover Letter</option>
+            <option value="product-description">🛍️ Product Description</option>
+            <option value="sales-pitch">💰 Sales Pitch</option>
+            <option value="youtube-script">▶️ YouTube Script</option>
+            <option value="podcast-intro">🎙️ Podcast Intro</option>
+          </select>
+        </div>
+
+        <div id="styleGuideOptions" style="display: none;">
+          <label for="styleGuideSelect">Style Guide</label>
+          <select id="styleGuideSelect">
+            <option value="default">📋 Default Style Guide</option>
+            <option value="custom">⚙️ Custom Guide</option>
+            <option value="academic">🎓 Academic Style</option>
+            <option value="marketing">📢 Marketing Style</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 15px; padding: 10px; background: #f0f4ff; border-radius: 6px; border-left: 3px solid #667eea;">
+          <label>Batch Options</label>
+          <div style="margin-top: 8px;">
+            <label style="display: flex; align-items: center; font-weight: normal; cursor: pointer;">
+              <input type="checkbox" id="preserveFormatting" checked style="width: auto; margin-right: 8px;">
+              <span>Preserve original formatting</span>
+            </label>
+            <label style="display: flex; align-items: center; font-weight: normal; cursor: pointer; margin-top: 6px;">
+              <input type="checkbox" id="mergeResults" style="width: auto; margin-right: 8px;">
+              <span>Merge all results into one file</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 20px;">
+          <button onclick="processBatch()" style="flex: 1;">🚀 Process All Files</button>
+          <button onclick="clearFiles()" style="background: #999; flex: 1;">Clear Files</button>
+          <button onclick="tryExample()" style="background: #8b5cf6; flex: 1;">📝 Try Example</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 id="resultsTitle" style="display: none;">✅ Results</h2>
+        <div id="results" style="display: none;">
+          <div id="progressContainer" style="display: none;">
+            <p id="progressText">Processing: 0/0 files</p>
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div id="resultsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="batch-processor.js"></script>
+</body>
+</html>

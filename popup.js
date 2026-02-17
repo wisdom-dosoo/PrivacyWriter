@@ -122,6 +122,9 @@ function setupEventListeners() {
   addListener('toolCoach', 'click', runWritingCoach);
   addListener('toolCustom', 'click', setupCustomPrompt);
   addListener('toolHistory', 'click', showHistory);
+  addListener('toolProofread', 'click', runAdvancedProofreading);
+  addListener('toolContextual', 'click', runContextualAssistant);
+  addListener('toolProfile', 'click', viewWritingProfile);
   
   const btnSettings = document.getElementById('btnSettings');
   if (btnSettings) {
@@ -683,4 +686,183 @@ async function showHistory() {
   }).join('\n');
   
   showOutput(historyText, 'History (Last 100 items)');
+}
+
+// ===== NEW PRO ADVANCED FEATURES HANDLERS =====
+
+// Advanced Proofreading
+async function runAdvancedProofreading() {
+  const text = document.getElementById('inputText').value.trim();
+  
+  document.querySelector('[data-tab="write"]').click();
+
+  if (!text) {
+    showMessage('Please enter text to proofread first', true);
+    document.getElementById('inputText').focus();
+    return;
+  }
+  
+  showLoading(true);
+  hideOutput();
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'advancedProofread',
+      text: text
+    });
+    
+    if (response.success) {
+      const result = response.result;
+      let output = `📊 PROOFREADING REPORT\n\n`;
+      output += `Severity: ${result.severity.toUpperCase()}\n`;
+      output += `Total Issues Found: ${result.totalIssues}\n\n`;
+      
+      if (result.issues && result.issues.length > 0) {
+        output += `ISSUES:\n`;
+        result.issues.forEach((issue, i) => {
+          output += `\n${i + 1}. [${issue.type}]\n   Issue: ${issue.issue}\n   Suggestion: ${issue.suggestion}`;
+        });
+      }
+      
+      output += `\n\n${result.summary}`;
+      showOutput(output, 'Advanced Proofreading Results');
+    } else {
+      showMessage(response.error || 'Proofreading failed', true);
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Contextual Writing Assistant
+async function runContextualAssistant() {
+  document.querySelector('[data-tab="write"]').click();
+  
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) {
+    showMessage('Please enter text to analyze', true);
+    return;
+  }
+
+  // Show context selector
+  const contexts = [
+    { id: 'professional', label: '💼 Professional/Business' },
+    { id: 'academic', label: '📚 Academic/Scholarly' },
+    { id: 'casual', label: '😊 Casual/Friendly' },
+    { id: 'technical', label: '⚙️ Technical/Documentation' },
+    { id: 'creative', label: '✨ Creative/Fiction' },
+    { id: 'social', label: '📱 Social Media' },
+    { id: 'legal', label: '⚖️ Legal/Formal' },
+    { id: 'marketing', label: '🎯 Marketing/Sales' }
+  ];
+
+  let contextHtml = 'Select writing context:\n\n';
+  contexts.forEach(c => {
+    contextHtml += `${c.label}\n`;
+  });
+
+  const selectedContext = prompt(contextHtml + '\nEnter context id (e.g., professional):', 'professional');
+  
+  if (!selectedContext) return;
+
+  showLoading(true);
+  hideOutput();
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'analyzeContext',
+      text: text,
+      contextType: selectedContext
+    });
+    
+    if (response.success) {
+      const result = response.result;
+      let output = `🎯 CONTEXTUAL ANALYSIS\n\n`;
+      output += `Context: ${result.contextType}\n`;
+      output += `Score: ${result.overallScore}/100\n\n`;
+      
+      if (result.issues && result.issues.length > 0) {
+        output += `⚠️ ISSUES (${result.issues.length}):\n`;
+        result.issues.forEach(issue => {
+          output += `• ${issue}\n`;
+        });
+      } else {
+        output += `✅ No major issues detected!\n`;
+      }
+      
+      if (result.suggestions && result.suggestions.length > 0) {
+        output += `\n💡 SUGGESTIONS:\n`;
+        result.suggestions.forEach(sug => {
+          output += `• ${sug}\n`;
+        });
+      }
+      
+      showOutput(output, `${result.contextType} - Writing Analysis`);
+    } else {
+      showMessage(response.error || 'Analysis failed', true);
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Writing Profile
+async function viewWritingProfile() {
+  document.querySelector('[data-tab="write"]').click();
+  hideOutput();
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'getWritingProfile'
+    });
+
+    if (response.success && response.data) {
+      const profile = response.data;
+      let output = `👤 YOUR WRITING PROFILE\n\n`;
+      output += `Total Corrections: ${profile.totalItems}\n`;
+      output += `Profile Created: ${new Date(profile.createdAt).toLocaleDateString()}\n\n`;
+      
+      output += `📊 STATISTICS:\n`;
+      output += `• Average Original Length: ${profile.stats.averageOriginalLength} chars\n`;
+      output += `• Average Result Length: ${profile.stats.averageResultLength} chars\n`;
+      output += `• Grammar Checks: ${profile.stats.grammarCheckFrequency}%\n`;
+      output += `• Rewrites: ${profile.stats.rewriteFrequency}%\n`;
+      output += `• Translations: ${profile.stats.translateFrequency}%\n`;
+      output += `• Summaries: ${profile.stats.summarizeFrequency}%\n\n`;
+      
+      output += `🎯 PATTERNS:\n`;
+      output += `• Vocabulary Level: ${profile.patterns.vocabularyLevel}\n`;
+      output += `• Sentence Preference: ${profile.patterns.sentencePreference}\n`;
+      output += `• Formality Score: ${(profile.patterns.formalityScore * 100).toFixed(0)}/100\n`;
+      output += `• Unique Words: ${profile.patterns.uniqueWords}\n\n`;
+      
+      if (profile.recommendations.length > 0) {
+        output += `💡 RECOMMENDATIONS:\n`;
+        profile.recommendations.forEach(rec => {
+          output += `• ${rec}\n`;
+        });
+      }
+
+      showOutput(output, 'Your Writing Profile');
+    } else {
+      showMessage('No profile yet. Build a profile by using more features.', true);
+      
+      showLoading(true);
+      const buildResp = await chrome.runtime.sendMessage({
+        action: 'buildWritingProfile'
+      });
+      showLoading(false);
+      
+      if (buildResp.success) {
+        showMessage('✅ Writing profile built! Check again.', false);
+        setTimeout(() => viewWritingProfile(), 1000);
+      }
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, true);
+  }
 }

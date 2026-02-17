@@ -23,7 +23,7 @@ async function initializePopup() {
     document.getElementById('upgradeBanner').classList.add('hidden');
     
     // Unlock Standard Pro features
-    const standardProCards = ['toolCoach', 'toolCustom', 'toolHistory'];
+    const standardProCards = ['toolCoach', 'toolCustom', 'toolHistory', 'toolProfile', 'toolAnalytics'];
     standardProCards.forEach(id => {
       const card = document.getElementById(id);
       if (card) {
@@ -36,7 +36,7 @@ async function initializePopup() {
     // Unlock Pro Plus features
     const isProPlus = ['pro_plus', 'team', 'enterprise'].includes(plan);
     if (isProPlus) {
-      const proPlusCards = ['toolBatch', 'toolStyle', 'toolApi'];
+      const proPlusCards = ['toolBatch', 'toolStyle', 'toolApi', 'toolProofread', 'toolContextual', 'toolTeam'];
       proPlusCards.forEach(id => {
         const card = document.getElementById(id);
         if (card) {
@@ -49,7 +49,7 @@ async function initializePopup() {
   }
 }
 
-// Setup navigation tabs
+// Setup Navigation Tabs
 function setupNavigation() {
   const tabs = document.querySelectorAll('.nav-tab');
   const contents = document.querySelectorAll('.tab-content');
@@ -58,11 +58,16 @@ function setupNavigation() {
     tab.addEventListener('click', () => {
       const targetTab = tab.dataset.tab;
       
+      // Remove active class from all tabs and contents
       tabs.forEach(t => t.classList.remove('active'));
       contents.forEach(c => c.classList.remove('active'));
       
+      // Add active class to clicked tab and corresponding content
       tab.classList.add('active');
-      document.getElementById(targetTab).classList.add('active');
+      const content = document.getElementById(targetTab);
+      if (content) {
+        content.classList.add('active');
+      }
     });
   });
 }
@@ -122,6 +127,10 @@ function setupEventListeners() {
   addListener('toolCoach', 'click', runWritingCoach);
   addListener('toolCustom', 'click', setupCustomPrompt);
   addListener('toolHistory', 'click', showHistory);
+  addListener('toolProofread', 'click', runAdvancedProofreading);
+  addListener('toolContextual', 'click', runContextualAssistant);
+  addListener('toolProfile', 'click', viewWritingProfile);
+  addListener('toolAnalytics', 'click', openAnalyticsDashboard);
   
   const btnSettings = document.getElementById('btnSettings');
   if (btnSettings) {
@@ -223,7 +232,13 @@ async function executeRewrite(tone) {
         'more-formal': 'Professional',
         'more-casual': 'Casual',
         'shorter': 'Shortened',
-        'longer': 'Expanded'
+        'longer': 'Expanded',
+        'executive': 'Executive',
+        'academic': 'Academic',
+        'persuasive': 'Persuasive',
+        'empathetic': 'Empathetic',
+        'humorous': 'Humorous',
+        'critical': 'Critical'
       };
       showOutput(response.result, `${toneNames[tone]} Version`);
     } else {
@@ -566,7 +581,15 @@ async function generateApiKey() {
   
   // Switch to write tab to show output
   document.querySelector('[data-tab="write"]').click();
-  showOutput(dummyKey, 'Your API Key (Limited)');
+  
+  const output = `🔑 API KEY GENERATED\n` +
+                 `${dummyKey}\n\n` +
+                 `📡 API ENDPOINT\n` +
+                 `https://api.privacywriter.com/v1\n\n` +
+                 `📚 DOCUMENTATION\n` +
+                 `https://privacywriter.com/docs/api`;
+                 
+  showOutput(output, 'Team API Access');
   
   // Hide replace button for API keys
   document.getElementById('replaceOriginal').classList.add('hidden');
@@ -634,7 +657,13 @@ async function runWritingCoach() {
     });
     
     if (response.success) {
-      showOutput(response.result, 'Writing Coach Report');
+      // Enhanced display for Writing Coach with score visualization
+      const analysis = response.result;
+      if (typeof analysis === 'object' && analysis.score !== undefined) {
+        displayWritingCoachResults(analysis);
+      } else {
+        showOutput(analysis, 'Writing Coach Report');
+      }
     } else {
       showMessage(response.error || 'Analysis failed', true);
       await showAIDiagnosticsHelp();
@@ -644,6 +673,54 @@ async function runWritingCoach() {
   } finally {
     showLoading(false);
   }
+}
+
+// Display Writing Coach analysis with visual score
+function displayWritingCoachResults(analysis) {
+  const outputSection = document.getElementById('outputSection');
+  const outputText = document.getElementById('outputText');
+  const scoreColor = analysis.score >= 75 ? '#10b981' : analysis.score >= 50 ? '#f59e0b' : '#ef4444';
+  
+  let html = `
+    <div style="margin-bottom: 16px;">
+      <h4 style="margin: 0 0 12px; color: #333; font-size: 14px;">Writing Quality Score</h4>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="flex: 1; height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden;">
+          <div style="height: 100%; width: ${analysis.score}%; background: ${scoreColor}; transition: width 0.3s;"></div>
+        </div>
+        <span style="font-weight: bold; font-size: 18px; color: ${scoreColor};">${analysis.score}/100</span>
+      </div>
+    </div>
+  `;
+  
+  if (analysis.feedback) {
+    html += `<h4 style="margin: 12px 0 8px; color: #333; font-size: 14px;">Feedback</h4>`;
+    html += `<p style="margin: 0 0 12px; color: #555; font-size: 13px; line-height: 1.6;">${analysis.feedback}</p>`;
+  }
+  
+  if (analysis.issues && Array.isArray(analysis.issues) && analysis.issues.length > 0) {
+    html += `<h4 style="margin: 12px 0 8px; color: #333; font-size: 14px;">Areas for Improvement</h4>`;
+    html += `<ul style="margin: 0; padding-left: 20px; color: #555; font-size: 13px;">`;
+    analysis.issues.slice(0, 5).forEach(issue => {
+      html += `<li style="margin-bottom: 4px;">${issue}</li>`;
+    });
+    html += `</ul>`;
+  }
+  
+  if (analysis.strengths && Array.isArray(analysis.strengths) && analysis.strengths.length > 0) {
+    html += `<h4 style="margin: 12px 0 8px; color: #333; font-size: 14px;">✅ Strengths</h4>`;
+    html += `<ul style="margin: 0; padding-left: 20px; color: #10b981; font-size: 13px;">`;
+    analysis.strengths.forEach(strength => {
+      html += `<li style="margin-bottom: 4px;">${strength}</li>`;
+    });
+    html += `</ul>`;
+  }
+  
+  outputText.innerHTML = html;
+  outputSection.classList.remove('hidden');
+  outputSection.querySelector('h3').textContent = '📊 Writing Coach Analysis';
+  document.getElementById('replaceOriginal').classList.add('hidden');
+  currentResult = null;
 }
 
 // Setup Custom Prompt
@@ -674,4 +751,188 @@ async function showHistory() {
   }).join('\n');
   
   showOutput(historyText, 'History (Last 100 items)');
+}
+
+// ===== NEW PRO ADVANCED FEATURES HANDLERS =====
+
+// Advanced Proofreading
+async function runAdvancedProofreading() {
+  const text = document.getElementById('inputText').value.trim();
+  
+  document.querySelector('[data-tab="write"]').click();
+
+  if (!text) {
+    showMessage('Please enter text to proofread first', true);
+    document.getElementById('inputText').focus();
+    return;
+  }
+  
+  showLoading(true);
+  hideOutput();
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'advancedProofread',
+      text: text
+    });
+    
+    if (response.success) {
+      const result = response.result;
+      let output = `📊 PROOFREADING REPORT\n\n`;
+      output += `Severity: ${result.severity.toUpperCase()}\n`;
+      output += `Total Issues Found: ${result.totalIssues}\n\n`;
+      
+      if (result.issues && result.issues.length > 0) {
+        output += `ISSUES:\n`;
+        result.issues.forEach((issue, i) => {
+          output += `\n${i + 1}. [${issue.type}]\n   Issue: ${issue.issue}\n   Suggestion: ${issue.suggestion}`;
+        });
+      }
+      
+      output += `\n\n${result.summary}`;
+      showOutput(output, 'Advanced Proofreading Results');
+    } else {
+      showMessage(response.error || 'Proofreading failed', true);
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Contextual Writing Assistant
+async function runContextualAssistant() {
+  document.querySelector('[data-tab="write"]').click();
+  
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) {
+    showMessage('Please enter text to analyze', true);
+    return;
+  }
+
+  // Show context selector
+  const contexts = [
+    { id: 'professional', label: '💼 Professional/Business' },
+    { id: 'academic', label: '📚 Academic/Scholarly' },
+    { id: 'casual', label: '😊 Casual/Friendly' },
+    { id: 'technical', label: '⚙️ Technical/Documentation' },
+    { id: 'creative', label: '✨ Creative/Fiction' },
+    { id: 'social', label: '📱 Social Media' },
+    { id: 'legal', label: '⚖️ Legal/Formal' },
+    { id: 'marketing', label: '🎯 Marketing/Sales' }
+  ];
+
+  let contextHtml = 'Select writing context:\n\n';
+  contexts.forEach(c => {
+    contextHtml += `${c.label}\n`;
+  });
+
+  const selectedContext = prompt(contextHtml + '\nEnter context id (e.g., professional):', 'professional');
+  
+  if (!selectedContext) return;
+
+  showLoading(true);
+  hideOutput();
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'analyzeContext',
+      text: text,
+      contextType: selectedContext
+    });
+    
+    if (response.success) {
+      const result = response.result;
+      let output = `🎯 CONTEXTUAL ANALYSIS\n\n`;
+      output += `Context: ${result.contextType}\n`;
+      output += `Score: ${result.overallScore}/100\n\n`;
+      
+      if (result.issues && result.issues.length > 0) {
+        output += `⚠️ ISSUES (${result.issues.length}):\n`;
+        result.issues.forEach(issue => {
+          output += `• ${issue}\n`;
+        });
+      } else {
+        output += `✅ No major issues detected!\n`;
+      }
+      
+      if (result.suggestions && result.suggestions.length > 0) {
+        output += `\n💡 SUGGESTIONS:\n`;
+        result.suggestions.forEach(sug => {
+          output += `• ${sug}\n`;
+        });
+      }
+      
+      showOutput(output, `${result.contextType} - Writing Analysis`);
+    } else {
+      showMessage(response.error || 'Analysis failed', true);
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Writing Profile
+async function viewWritingProfile() {
+  document.querySelector('[data-tab="write"]').click();
+  hideOutput();
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'getWritingProfile'
+    });
+
+    if (response.success && response.data) {
+      const profile = response.data;
+      let output = `👤 YOUR WRITING PROFILE\n\n`;
+      output += `Total Corrections: ${profile.totalItems}\n`;
+      output += `Profile Created: ${new Date(profile.createdAt).toLocaleDateString()}\n\n`;
+      
+      output += `📊 STATISTICS:\n`;
+      output += `• Average Original Length: ${profile.stats.averageOriginalLength} chars\n`;
+      output += `• Average Result Length: ${profile.stats.averageResultLength} chars\n`;
+      output += `• Grammar Checks: ${profile.stats.grammarCheckFrequency}%\n`;
+      output += `• Rewrites: ${profile.stats.rewriteFrequency}%\n`;
+      output += `• Translations: ${profile.stats.translateFrequency}%\n`;
+      output += `• Summaries: ${profile.stats.summarizeFrequency}%\n\n`;
+      
+      output += `🎯 PATTERNS:\n`;
+      output += `• Vocabulary Level: ${profile.patterns.vocabularyLevel}\n`;
+      output += `• Sentence Preference: ${profile.patterns.sentencePreference}\n`;
+      output += `• Formality Score: ${(profile.patterns.formalityScore * 100).toFixed(0)}/100\n`;
+      output += `• Unique Words: ${profile.patterns.uniqueWords}\n\n`;
+      
+      if (profile.recommendations.length > 0) {
+        output += `💡 RECOMMENDATIONS:\n`;
+        profile.recommendations.forEach(rec => {
+          output += `• ${rec}\n`;
+        });
+      }
+
+      showOutput(output, 'Your Writing Profile');
+    } else {
+      showMessage('No profile yet. Build a profile by using more features.', true);
+      
+      showLoading(true);
+      const buildResp = await chrome.runtime.sendMessage({
+        action: 'buildWritingProfile'
+      });
+      showLoading(false);
+      
+      if (buildResp.success) {
+        showMessage('✅ Writing profile built! Check again.', false);
+        setTimeout(() => viewWritingProfile(), 1000);
+      }
+    }
+  } catch (error) {
+    showMessage('Error: ' + error.message, true);
+  }
+}
+
+// Open Analytics Dashboard
+function openAnalyticsDashboard() {
+  chrome.tabs.create({ url: chrome.runtime.getURL('analytics-dashboard.html') });
 }
