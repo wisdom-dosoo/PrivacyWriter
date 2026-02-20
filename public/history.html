@@ -6,42 +6,89 @@
   <title>Writing History - PrivacyWriter</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5a67d8;
+      --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --container-bg: #ffffff;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border: #e0e0e0;
+      --item-bg: #f9f9f9;
+      --shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-gradient: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        --container-bg: #1f2937;
+        --text-main: #f3f4f6;
+        --text-muted: #9ca3af;
+        --border: #374151;
+        --item-bg: #111827; /* Darker contrast for items */
+        --shadow: 0 20px 60px rgba(0,0,0,0.5);
+      }
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--bg-gradient);
+      color: var(--text-main);
       min-height: 100vh;
       padding: 20px;
     }
-    .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .container { max-width: 1000px; margin: 0 auto; background: var(--container-bg); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; height: 90vh; }
+    .header { background: var(--bg-gradient); color: white; padding: 20px 30px; flex-shrink: 0; }
     .header h1 { font-size: 2em; margin-bottom: 10px; }
-    .content { padding: 30px; }
-    .section { margin-bottom: 30px; }
-    .section h2 { color: #333; margin-bottom: 15px; font-size: 1.3em; }
-    .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; }
-    button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; transition: all 0.3s; font-size: 0.9em; }
-    button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .content { padding: 30px; overflow-y: auto; flex-grow: 1; }
+    .section { margin-bottom: 30px; background: var(--container-bg); }
+    .section h2 { color: var(--text-main); margin-bottom: 15px; font-size: 1.3em; }
+    
+    /* Responsive Controls */
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center; }
+    input, select { flex: 1; min-width: 200px; padding: 10px; border: 1px solid var(--border); background: var(--container-bg); color: var(--text-main); border-radius: 6px; font-family: inherit; }
+    
+    button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.9em; font-weight: 500; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
     .button-group { display: flex; gap: 8px; }
-    .history-item { border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 12px; background: #f9f9f9; }
+    
+    /* History Items */
+    .history-item { border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 12px; background: var(--item-bg); transition: border-color 0.2s; }
+    .history-item:hover { border-color: var(--primary); }
     .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .history-type { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; }
+    
     .type-grammar { background: #dbeafe; color: #0369a1; }
     .type-rewrite { background: #d1fae5; color: #065f46; }
     .type-summarize { background: #fed7aa; color: #92400e; }
     .type-translate { background: #ddd6fe; color: #5b21b6; }
     .type-coaching { background: #fce7f3; color: #831843; }
-    .history-date { font-size: 0.85em; color: #999; }
-    .history-content { font-size: 0.9em; color: #555; line-height: 1.6; max-height: 150px; overflow-y: auto; }
+    
+    .history-date { font-size: 0.85em; color: var(--text-muted); }
+    .history-content { font-size: 0.9em; color: var(--text-main); line-height: 1.6; max-height: 150px; overflow-y: auto; white-space: pre-wrap; }
+    .history-label { font-size: 0.75em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 700; letter-spacing: 0.5px; }
+    
     .history-actions { display: flex; gap: 8px; margin-top: 10px; }
     button.small { padding: 6px 12px; font-size: 0.8em; background: #64748b; }
     button.small:hover { background: #475569; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-    .stat-card { background: #f0f4ff; border-left: 4px solid #667eea; padding: 15px; border-radius: 6px; text-align: center; }
-    .stat-card h3 { color: #667eea; font-size: 2em; margin: 0; }
-    .stat-card p { color: #666; font-size: 0.9em; margin: 5px 0 0; }
-    .empty-state { text-align: center; padding: 40px 20px; color: #999; }
+    
+    /* Stats Grid */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--item-bg); border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 15px; border-radius: 6px; text-align: center; }
+    .stat-card h3 { color: var(--primary); font-size: 2em; margin: 0; }
+    .stat-card p { color: var(--text-muted); font-size: 0.9em; margin: 5px 0 0; }
+    
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
     .empty-state p { font-size: 1.1em; margin-bottom: 10px; }
+    
+    /* Toast Notification */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
+    /* Load More */
+    .load-more-container { text-align: center; margin-top: 20px; padding-bottom: 20px; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
@@ -102,9 +149,14 @@
             <p style="font-size: 0.9em;">Complete some writing tasks to build your history.</p>
           </div>
         </div>
+        <div id="loadMoreContainer" class="load-more-container hidden">
+          <button id="btnLoadMore" class="btn secondary">Load More Results</button>
+        </div>
       </div>
     </div>
   </div>
+
+  <div id="toast-container"></div>
 
   <script src="history.js"></script>
 </body>

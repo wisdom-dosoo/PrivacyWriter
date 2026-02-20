@@ -221,32 +221,32 @@ class ClaudeAIFallback {
  * Export functions for use in background.js
  */
 
-async function checkGrammarWithClaude(text, apiKey) {
+export async function checkGrammarWithClaude(text, apiKey) {
   const claude = new ClaudeAIFallback(apiKey);
   return claude.checkGrammar(text);
 }
 
-async function rewriteTextWithClaude(text, tone, apiKey) {
+export async function rewriteTextWithClaude(text, tone, apiKey) {
   const claude = new ClaudeAIFallback(apiKey);
   return claude.rewriteText(text, tone);
 }
 
-async function summarizeTextWithClaude(text, apiKey) {
+export async function summarizeTextWithClaude(text, apiKey) {
   const claude = new ClaudeAIFallback(apiKey);
   return claude.summarizeText(text);
 }
 
-async function translateTextWithClaude(text, targetLang, apiKey) {
+export async function translateTextWithClaude(text, targetLang, apiKey) {
   const claude = new ClaudeAIFallback(apiKey);
   return claude.translateText(text, targetLang);
 }
 
-async function analyzeWritingQualityWithClaude(text, apiKey) {
+export async function analyzeWritingQualityWithClaude(text, apiKey) {
   const claude = new ClaudeAIFallback(apiKey);
   return claude.analyzeWritingQuality(text);
 }
 
-async function testClaudeApiKey(apiKey) {
+export async function testClaudeApiKey(apiKey) {
   const claude = new ClaudeAIFallback(apiKey);
   return claude.testApiKey();
 }

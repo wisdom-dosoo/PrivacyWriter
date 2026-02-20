@@ -1,5 +1,7 @@
 // Settings Page Script
 
+let hasUnsavedChanges = false;
+
 // Tab switching
 document.querySelectorAll('.settings-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
@@ -25,6 +27,18 @@ document.querySelectorAll('.settings-tab').forEach(tab => {
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllSettings();
   setupEventListeners();
+  
+  // Track changes
+  document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', () => { hasUnsavedChanges = true; });
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 });
 
 /**
@@ -158,6 +172,7 @@ async function saveGeneralSettings() {
   };
   
   await chrome.storage.local.set(settings);
+  hasUnsavedChanges = false;
   showMessage('✅ General settings saved!', 'success');
 }
 
@@ -187,6 +202,7 @@ async function saveAISettings() {
     document.getElementById('claudeApiKey').value = '••••••' + claudeKey.slice(-4);
   }
   
+  hasUnsavedChanges = false;
   showMessage('✅ AI settings saved!', 'success');
 }
 
@@ -202,6 +218,7 @@ async function savePrivacySettings() {
   };
   
   await chrome.storage.local.set(settings);
+  hasUnsavedChanges = false;
   showMessage('✅ Privacy settings saved!', 'success');
 }
 
@@ -222,6 +239,7 @@ async function saveCloudSettings() {
   }
   
   await chrome.storage.local.set(settings);
+  hasUnsavedChanges = false;
   showMessage('✅ Cloud settings saved!', 'success');
 }
 

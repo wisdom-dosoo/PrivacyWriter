@@ -5,27 +5,63 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Cloud Sync - PrivacyWriter</title>
   <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f7fafc;padding:24px}
-    .card{max-width:900px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
-    h1{margin:0 0 8px;font-size:20px}
-    p.lead{color:#475569;margin:0 0 18px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    label{font-weight:600;color:#0f172a;font-size:13px}
-    input,textarea,select{width:100%;padding:10px;border:1px solid #e6edf3;border-radius:6px}
-    button{background:#10b981;color:white;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
-    button.secondary{background:#64748b}
-    pre{background:#0f172a;color:#e6edf3;padding:12px;border-radius:6px;overflow:auto}
-    .muted{color:#64748b;font-size:13px}
-    .controls{display:flex;gap:8px;margin-top:10px}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --bg-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --container-bg: #ffffff;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border: #e0e0e0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; background: var(--container-bg); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+    .header { background: var(--bg-gradient); color: white; padding: 30px; text-align: center; }
+    .header h1 { font-size: 2em; margin-bottom: 10px; }
+    .content { padding: 30px; }
+    .section { margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid var(--border); }
+    .section:last-child { border-bottom: none; }
+    h2 { color: var(--text-main); margin-bottom: 15px; font-size: 1.3em; }
+    
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+    
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-main); font-size: 0.9em; }
+    input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; }
+    
+    button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    button.secondary { background: #64748b; }
+    
+    pre { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 6px; overflow: auto; font-size: 0.85em; max-height: 200px; }
+    .muted { color: var(--text-muted); font-size: 0.9em; margin-top: 5px; }
+    .controls { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    
+    /* Toast */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Cloud Sync (Prototype)</h1>
-    <p class="lead">Export an encrypted backup of your settings, history, and style guides. Import backups to restore data. Optionally upload to a mock server.</p>
+  <div class="container">
+    <div class="header">
+      <h1>☁️ Cloud Sync</h1>
+      <p>Securely backup and restore your PrivacyWriter data</p>
+    </div>
 
-    <div style="margin-bottom:16px">
-      <label>Server Upload (optional)</label>
+    <div class="content">
+      <div class="section">
+        <h2>📡 Server Sync</h2>
+        <p class="muted" style="margin-bottom: 15px;">Configure a custom endpoint to sync your encrypted data.</p>
       <div class="row">
         <input id="uploadUrl" placeholder="https://example.com/receive-backup" />
         <input id="uploadToken" placeholder="Optional API token" />
@@ -34,13 +70,10 @@
         <button id="saveServer">Save Server</button>
         <button class="secondary" id="pushServer">Push Now</button>
       </div>
-      <p class="muted">If no server is configured, backups will be saved locally for download.</p>
     </div>
 
-    <hr />
-
-    <div style="margin-top:12px">
-      <label>Encrypt & Download Backup</label>
+      <div class="section">
+        <h2>🔐 Encrypted Backup</h2>
       <input id="exportPass" type="password" placeholder="Enter passphrase to encrypt backup" />
       <div class="controls">
         <button id="exportBtn">Export Encrypted Backup</button>
@@ -48,15 +81,12 @@
       </div>
     </div>
 
-    <hr />
-
-    <div style="margin-top:12px">
-      <label>Import Backup</label>
+      <div class="section">
+        <h2>📥 Restore Data</h2>
       <input id="fileInput" type="file" accept=".json" />
       <input id="importPass" type="password" placeholder="Passphrase (if encrypted)" style="margin-top:8px" />
       <div class="controls">
         <button id="importBtn">Import & Decrypt</button>
-        <button class="secondary" id="previewBtn">Preview Last Local Export</button>
       </div>
     </div>
 
@@ -67,9 +97,10 @@
         <button id="restoreBtn">Restore To Extension</button>
       </div>
     </div>
-
-    <div id="status" style="margin-top:14px" class="muted"></div>
+    </div>
   </div>
+
+  <div id="toast-container"></div>
 
   <script src="cloud-sync.js"></script>
 </body>

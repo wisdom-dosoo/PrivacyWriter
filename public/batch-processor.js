@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     if (newFiles.length === 0) {
-      alert('Please select valid text files (.txt, .md, .html)');
+      showToast('Please select valid text files (.txt, .md, .html)', 'error');
       return;
     }
 
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.processBatch = async () => {
     if (selectedFiles.length === 0) {
-      alert('Please select files to process.');
+      showToast('Please select files to process.', 'error');
       return;
     }
 
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (task === 'style-guide') options.guide = document.getElementById('styleGuideSelect').value;
 
     if (task === 'translate' && !options.targetLang) {
-      alert('Please select a target language.');
+      showToast('Please select a target language.', 'error');
       return;
     }
 
@@ -143,12 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.success) {
         updateProgress(selectedFiles.length, selectedFiles.length);
         renderResults(response.results, fileContents);
+        showToast('Batch processing complete!');
       } else {
-        alert('Batch processing failed: ' + response.error);
+        showToast('Batch processing failed: ' + response.error, 'error');
       }
     } catch (error) {
       console.error(error);
-      alert('Error connecting to extension.');
+      showToast('Error connecting to extension.', 'error');
     }
   };
 
@@ -193,3 +194,35 @@ document.addEventListener('DOMContentLoaded', () => {
     return (bytes / 1024).toFixed(1) + ' KB';
   }
 });
+
+// --- Toast Notification System ---
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;";
+    document.body.appendChild(container);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+      .toast.success { background: #10b981; }
+      .toast.error { background: #ef4444; }
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}

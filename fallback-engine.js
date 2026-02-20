@@ -2,7 +2,7 @@
 // Handles local inference when Chrome Built-in AI is unavailable
 
 // Enhanced Configuration with model metadata and error recovery
-const FALLBACK_CONFIG = {
+export const FALLBACK_CONFIG = {
   models: {
     grammar: {
       name: 'Xenova/LaMini-Flan-T5-248M',
@@ -158,7 +158,7 @@ function withTimeout(promise, ms, errorMsg) {
 /**
  * Main entry point called by background.js with robust error recovery
  */
-async function runFallbackAI(task, text, options = {}) {
+export async function runFallbackAI(task, text, options = {}) {
   console.log(`[Fallback AI] Processing task: ${task}`);
 
   if (!text || text.trim().length === 0) {
@@ -440,7 +440,7 @@ function simpleRewrite(text, style) {
 /**
  * Get list of downloaded models status
  */
-async function getModelDownloadStatus() {
+export async function getModelDownloadStatus() {
   const status = {};
   Object.keys(FALLBACK_CONFIG.models).forEach(task => {
     status[task] = {

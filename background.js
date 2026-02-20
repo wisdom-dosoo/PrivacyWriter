@@ -1,11 +1,54 @@
 // PrivacyWriter Background Service Worker
 // Handles: AI initialization, context menus, keyboard shortcuts, Pro status
 
-importScripts('pro-features.js');
-importScripts('pro-advanced-features.js');
-importScripts('pro-plus-features.js');
-importScripts('fallback-engine.js');
-importScripts('claude-fallback.js');
+import {
+  PRO_LANGUAGES,
+  FREE_LANGUAGES,
+  analyzeWritingQuality,
+  generateContent,
+  saveHistoryItem,
+  searchHistory,
+  exportHistory,
+  buildWritingProfile,
+  getWritingProfile,
+  checkFacts,
+  detectContext
+} from './pro-features.js';
+
+// Import other modules (Ensure these files also use 'export' if you need their functions)
+import {
+  advancedProofread,
+  factCheckText,
+  buildAnalyticsDashboard,
+  createSharedDocument,
+  addDocumentComment,
+  requestReview,
+  approveDocument,
+  createTeamStyleGuide,
+  enforceTeamStandardsOnDoc
+} from './pro-advanced-features.js';
+
+import {
+  analyzeStyleGuide,
+  processBatchItems,
+  prepareCloudSync,
+  PRO_PLUS_DEFAULTS
+} from './pro-plus-features.js';
+
+import {
+  runFallbackAI,
+  FALLBACK_CONFIG,
+  getModelDownloadStatus
+} from './fallback-engine.js';
+
+import {
+  checkGrammarWithClaude,
+  rewriteTextWithClaude,
+  summarizeTextWithClaude,
+  translateTextWithClaude,
+  testClaudeApiKey
+} from './claude-fallback.js';
+
 console.log('PrivacyWriter Background Service Worker Started');
 
 // DEV: Force Activate Pro Plus features for testing
@@ -46,7 +89,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 async function initializeExtension() {
   await chrome.storage.local.set({
-    isPro: false,
     isPro: true,
     plan: 'pro_plus',
     settings: {
@@ -82,7 +124,9 @@ async function initializeExtension() {
     // NEW: API Keys (encrypted in production, plaintext in dev)
     apiKeys: {
       claude: ''
-    }
+    },
+    localOnly: true,
+    useClaudeAPI: false
   });
 }
 
@@ -443,8 +487,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       chrome.tabs.sendMessage(tab.id, {
         action: 'showResult',
         originalText: text,
-        result: result,
+        result: typeof result === 'object' ? result.text : result,
         type: action
+      }).catch(err => {
+        console.debug('Failed to send result to content script:', err);
       });
       
       // Update analytics
@@ -466,6 +512,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     chrome.tabs.sendMessage(tab.id, {
       action: 'showError',
       error: errorMessage
+    }).catch(err => {
+      console.debug('Failed to send error to content script:', err);
     });
 
 
@@ -493,7 +541,7 @@ async function checkGrammar(text) {
   }
 
   // Get settings
-  const { settings, apiKeys = {}, isPro } = await chrome.storage.local.get(['settings', 'apiKeys', 'isPro']);
+  const { settings, apiKeys = {}, isPro, localOnly, useClaudeAPI } = await chrome.storage.local.get(['settings', 'apiKeys', 'isPro', 'localOnly', 'useClaudeAPI']);
   const autoCorrect = settings?.autoCorrect || false;
 
   try {
@@ -506,7 +554,7 @@ async function checkGrammar(text) {
         const result = await proofreaderSession.proofread(text);
         await saveHistoryItem('grammar', text, result);
         console.log('✅ Grammar check: Using Chrome Proofreader API');
-        return result || 'No grammar issues found.';
+        return { text: result || 'No grammar issues found.', model: 'Chrome Proofreader (Local)' };
       } catch (err) {
         console.warn('❌ Proofreader API failed, attempting next tier:', err.message);
         proofreaderSession = null;
@@ -534,7 +582,7 @@ async function checkGrammar(text) {
         const response = await promptSession.prompt(prompt);
         await saveHistoryItem('grammar', text, response);
         console.log('✅ Grammar check: Using Chrome Prompt API');
-        return response || 'No grammar issues found.';
+        return { text: response || 'No grammar issues found.', model: 'Chrome Gemini Nano (Local)' };
       } catch (err) {
         console.warn('❌ Prompt API failed, attempting next tier:', err.message);
         promptSession = null;
@@ -542,14 +590,14 @@ async function checkGrammar(text) {
     }
 
     // TIER 3: Try Claude API (Cloud - Pro tier only)
-    if (isPro && apiKeys?.claude) {
+    if (isPro && apiKeys?.claude && useClaudeAPI && localOnly === false) {
       try {
         console.log('Attempting Claude API for grammar...');
         const result = await checkGrammarWithClaude(text, apiKeys.claude);
         await saveHistoryItem('grammar', text, result);
         await updateAnalytics('grammar-claude', text.split(/\s+/).length);
         console.log('✅ Grammar check: Using Claude API');
-        return result || 'No grammar issues found.';
+        return { text: result || 'No grammar issues found.', model: 'Claude API (Cloud)' };
       } catch (err) {
         console.warn('❌ Claude API failed, attempting next tier:', err.message);
       }
@@ -561,7 +609,7 @@ async function checkGrammar(text) {
       const result = await runFallbackAI('grammar', text);
       await saveHistoryItem('grammar', text, result);
       console.log('✅ Grammar check: Using local Transformers.js');
-      return result || 'No grammar issues found.';
+      return { text: result || 'No grammar issues found.', model: 'Transformers.js (Local)' };
     } catch (err) {
       console.warn('❌ Transformers.js failed, attempting simple rules:', err.message);
     }
@@ -571,7 +619,7 @@ async function checkGrammar(text) {
     const result = simpleGrammarFix(text);
     await saveHistoryItem('grammar', text, result);
     console.log('✅ Grammar check: Using simple rules');
-    return result || text;
+    return { text: result || text, model: 'Basic Rules (Local)' };
 
   } catch (error) {
     console.error('All grammar check methods failed:', error);
@@ -609,7 +657,7 @@ async function rewriteText(text, style) {
     throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
   }
 
-  const { apiKeys = {}, isPro } = await chrome.storage.local.get(['apiKeys', 'isPro']);
+  const { apiKeys = {}, isPro, localOnly, useClaudeAPI } = await chrome.storage.local.get(['apiKeys', 'isPro', 'localOnly', 'useClaudeAPI']);
   
   // Check Pro-only tones
   const proOnlyTones = ['executive', 'academic', 'persuasive', 'empathetic', 'humorous', 'critical'];
@@ -633,7 +681,7 @@ async function rewriteText(text, style) {
         const result = await rewriterSession.rewrite(text);
         await saveHistoryItem('rewrite', text, result);
         console.log('✅ Rewrite: Using Chrome Rewriter API');
-        return result || text;
+        return { text: result || text, model: 'Chrome Rewriter (Local)' };
       } catch (err) {
         console.warn('❌ Rewriter API failed, attempting next tier:', err.message);
         rewriterSession = null;
@@ -665,7 +713,7 @@ async function rewriteText(text, style) {
         );
         await saveHistoryItem('rewrite', text, response);
         console.log('✅ Rewrite: Using Chrome Prompt API');
-        return response || text;
+        return { text: response || text, model: 'Chrome Gemini Nano (Local)' };
       } catch (err) {
         console.warn('❌ Prompt API failed, attempting next tier:', err.message);
         promptSession = null;
@@ -673,14 +721,14 @@ async function rewriteText(text, style) {
     }
 
     // TIER 3: Try Claude API (Cloud - Pro tier only)
-    if (isPro && apiKeys?.claude) {
+    if (isPro && apiKeys?.claude && useClaudeAPI && localOnly === false) {
       try {
         console.log('Attempting Claude API for rewrite...');
         const result = await rewriteTextWithClaude(text, style, apiKeys.claude);
         await saveHistoryItem('rewrite', text, result);
         await updateAnalytics('rewrite-claude', text.split(/\s+/).length);
         console.log('✅ Rewrite: Using Claude API');
-        return result || text;
+        return { text: result || text, model: 'Claude API (Cloud)' };
       } catch (err) {
         console.warn('❌ Claude API failed, attempting next tier:', err.message);
       }
@@ -692,7 +740,7 @@ async function rewriteText(text, style) {
       const result = await runFallbackAI('rewrite', text, { style });
       await saveHistoryItem('rewrite', text, result);
       console.log('✅ Rewrite: Using local Transformers.js');
-      return result || text;
+      return { text: result || text, model: 'Transformers.js (Local)' };
     } catch (err) {
       console.warn('❌ Transformers.js failed, attempting simple rules:', err.message);
     }
@@ -702,7 +750,7 @@ async function rewriteText(text, style) {
     const result = simpleRewrite(text, style);
     await saveHistoryItem('rewrite', text, result);
     console.log('✅ Rewrite: Using simple rules');
-    return result || text;
+    return { text: result || text, model: 'Basic Rules (Local)' };
 
   } catch (error) {
     console.error('All rewrite methods failed:', error);
@@ -737,7 +785,7 @@ async function summarizeText(text) {
     throw new Error('Daily limit reached. Upgrade to Pro for unlimited usage.');
   }
 
-  const { apiKeys = {}, isPro } = await chrome.storage.local.get(['apiKeys', 'isPro']);
+  const { apiKeys = {}, isPro, localOnly, useClaudeAPI } = await chrome.storage.local.get(['apiKeys', 'isPro', 'localOnly', 'useClaudeAPI']);
 
   try {
     // TIER 1: Try Summarizer API (Chrome native - fastest)
@@ -753,7 +801,7 @@ async function summarizeText(text) {
         const result = await summarizerSession.summarize(text);
         await saveHistoryItem('summarize', text, result);
         console.log('✅ Summarize: Using Chrome Summarizer API');
-        return result || 'Unable to generate summary. Try shorter text.';
+        return { text: result || 'Unable to generate summary.', model: 'Chrome Summarizer (Local)' };
       } catch (err) {
         console.warn('❌ Summarizer API failed, attempting next tier:', err.message);
         summarizerSession = null;
@@ -772,7 +820,7 @@ async function summarizeText(text) {
         );
         await saveHistoryItem('summarize', text, response);
         console.log('✅ Summarize: Using Chrome Prompt API');
-        return response || 'Unable to generate summary.';
+        return { text: response || 'Unable to generate summary.', model: 'Chrome Gemini Nano (Local)' };
       } catch (err) {
         console.warn('❌ Prompt API failed, attempting next tier:', err.message);
         promptSession = null;
@@ -780,14 +828,14 @@ async function summarizeText(text) {
     }
 
     // TIER 3: Try Claude API (Cloud - Pro tier only)
-    if (isPro && apiKeys?.claude) {
+    if (isPro && apiKeys?.claude && useClaudeAPI && localOnly === false) {
       try {
         console.log('Attempting Claude API for summarization...');
         const result = await summarizeTextWithClaude(text, apiKeys.claude);
         await saveHistoryItem('summarize', text, result);
         await updateAnalytics('summarize-claude', text.split(/\s+/).length);
         console.log('✅ Summarize: Using Claude API');
-        return result || 'Unable to generate summary.';
+        return { text: result || 'Unable to generate summary.', model: 'Claude API (Cloud)' };
       } catch (err) {
         console.warn('❌ Claude API failed, attempting next tier:', err.message);
       }
@@ -799,7 +847,7 @@ async function summarizeText(text) {
       const result = await runFallbackAI('summarize', text);
       await saveHistoryItem('summarize', text, result);
       console.log('✅ Summarize: Using local Transformers.js');
-      return result || 'Unable to generate summary.';
+      return { text: result || 'Unable to generate summary.', model: 'Transformers.js (Local)' };
     } catch (err) {
       console.warn('❌ Transformers.js failed:', err.message);
     }
@@ -834,7 +882,7 @@ async function translateText(text, targetLang) {
   }
 
   // Check Pro status for language support
-  const { isPro, apiKeys = {} } = await chrome.storage.local.get(['isPro', 'apiKeys']);
+  const { isPro, apiKeys = {}, localOnly, useClaudeAPI } = await chrome.storage.local.get(['isPro', 'apiKeys', 'localOnly', 'useClaudeAPI']);
 
   // Validate language availability
   if (isPro) {
@@ -861,7 +909,7 @@ async function translateText(text, targetLang) {
         const result = await translator.translate(text);
         await saveHistoryItem('translate', text, result);
         console.log('✅ Translate: Using Chrome Translator API');
-        return result || text;
+        return { text: result || text, model: 'Chrome Translator (Local)' };
       } catch (err) {
         console.warn('❌ Translator API failed, attempting next tier:', err.message);
       }
@@ -879,7 +927,7 @@ async function translateText(text, targetLang) {
         );
         await saveHistoryItem('translate', text, response);
         console.log('✅ Translate: Using Chrome Prompt API');
-        return response || text;
+        return { text: response || text, model: 'Chrome Gemini Nano (Local)' };
       } catch (err) {
         console.warn('❌ Prompt API failed, attempting next tier:', err.message);
         promptSession = null;
@@ -887,14 +935,14 @@ async function translateText(text, targetLang) {
     }
 
     // TIER 3: Try Claude API (Cloud - Pro tier only)
-    if (isPro && apiKeys?.claude) {
+    if (isPro && apiKeys?.claude && useClaudeAPI && localOnly === false) {
       try {
         console.log('Attempting Claude API for translation...');
         const result = await translateTextWithClaude(text, targetLang, apiKeys.claude);
         await saveHistoryItem('translate', text, result);
         await updateAnalytics('translate-claude', text.split(/\s+/).length);
         console.log('✅ Translate: Using Claude API');
-        return result || text;
+        return { text: result || text, model: 'Claude API (Cloud)' };
       } catch (err) {
         console.warn('❌ Claude API failed, attempting next tier:', err.message);
       }
@@ -906,7 +954,7 @@ async function translateText(text, targetLang) {
       const result = await runFallbackAI('translate', text, { targetLang });
       await saveHistoryItem('translate', text, result);
       console.log('✅ Translate: Using local Transformers.js');
-      return result || text;
+      return { text: result || text, model: 'Transformers.js (Local)' };
     } catch (err) {
       console.warn('❌ Transformers.js failed:', err.message);
     }
@@ -965,32 +1013,6 @@ async function writeText(prompt, context) {
       throw error;
     }
   }
-}
-
-async function processBatchItems(items, processor) {
-  if (!Array.isArray(items)) {
-    throw new Error('Items must be an array');
-  }
-
-  const results = [];
-
-  // Process sequentially to ensure stability of local AI models
-  for (const item of items) {
-    try {
-      if (!item || typeof item.text !== 'string') {
-        results.push({ id: item.id, status: 'error', error: 'Invalid item format' });
-        continue;
-      }
-
-      const result = await processor(item.text);
-      results.push({ id: item.id, status: 'success', result });
-    } catch (error) {
-      console.error(`Batch processing error for item ${item.id}:`, error);
-      results.push({ id: item.id, status: 'error', error: error.message || 'Unknown error' });
-    }
-  }
-
-  return results;
 }
 
 // ==========================================
@@ -1083,7 +1105,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'checkGrammar':
           try {
             const grammarResult = await checkGrammar(request.text);
-            sendResponse({ success: true, result: grammarResult });
+            sendResponse({ success: true, result: grammarResult.text, model: grammarResult.model });
           } catch (error) {
             sendResponse({ success: false, error: error.message || 'Grammar check failed' });
           }
@@ -1092,7 +1114,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'rewrite':
           try {
             const rewriteResult = await rewriteText(request.text, request.style);
-            sendResponse({ success: true, result: rewriteResult });
+            sendResponse({ success: true, result: rewriteResult.text, model: rewriteResult.model });
           } catch (error) {
             sendResponse({ success: false, error: error.message || 'Rewrite failed' });
           }
@@ -1101,7 +1123,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'summarize':
           try {
             const summaryResult = await summarizeText(request.text);
-            sendResponse({ success: true, result: summaryResult });
+            sendResponse({ success: true, result: summaryResult.text, model: summaryResult.model });
           } catch (error) {
             sendResponse({ success: false, error: error.message || 'Summarization failed' });
           }
@@ -1110,7 +1132,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'translate':
           try {
             const translateResult = await translateText(request.text, request.targetLang);
-            sendResponse({ success: true, result: translateResult });
+            sendResponse({ success: true, result: translateResult.text, model: translateResult.model });
           } catch (error) {
             sendResponse({ success: false, error: error.message || 'Translation failed' });
           }

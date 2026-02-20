@@ -15,7 +15,7 @@ async function createStyleGuide() {
   const tonePref = document.getElementById('tonePref').value;
 
   if (!name) {
-    alert('Please enter a guide name');
+    showToast('Please enter a guide name', 'error');
     return;
   }
 
@@ -79,7 +79,7 @@ async function createStyleGuide() {
     guides.push(guide);
     await chrome.storage.local.set({ styleGuides: guides });
 
-    alert('✅ Style guide created!');
+    showToast('Style guide created successfully!');
     document.getElementById('guideName').value = '';
     document.getElementById('guideDescription').value = '';
     document.getElementById('bannedWords').value = '';
@@ -90,7 +90,7 @@ async function createStyleGuide() {
     loadStyleGuides();
     populateGuideSelector();
   } catch (error) {
-    alert('Error: ' + error.message);
+    showToast('Error: ' + error.message, 'error');
   }
 }
 
@@ -144,9 +144,9 @@ async function deleteStyleGuide(guideId) {
 
     loadStyleGuides();
     populateGuideSelector();
-    alert('✅ Style guide deleted');
+    showToast('Style guide deleted');
   } catch (error) {
-    alert('Error: ' + error.message);
+    showToast('Error: ' + error.message, 'error');
   }
 }
 
@@ -174,12 +174,12 @@ async function testStyleGuide() {
   const text = document.getElementById('testText').value.trim();
 
   if (!guideId) {
-    alert('Please select a style guide');
+    showToast('Please select a style guide', 'error');
     return;
   }
 
   if (!text) {
-    alert('Please enter text to test');
+    showToast('Please enter text to test', 'error');
     return;
   }
 
@@ -217,9 +217,41 @@ async function testStyleGuide() {
       document.getElementById('testResults').style.display = 'block';
       document.getElementById('resultsContent').innerHTML = html;
     } else {
-      alert('Error: ' + response.error);
+      showToast('Error: ' + response.error, 'error');
     }
   } catch (error) {
-    alert('Test failed: ' + error.message);
+    showToast('Test failed: ' + error.message, 'error');
   }
+}
+
+// --- Toast Notification System ---
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;";
+    document.body.appendChild(container);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+      .toast.success { background: #10b981; }
+      .toast.error { background: #ef4444; }
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }

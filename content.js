@@ -8,6 +8,7 @@ let selectionToolbar = null;
 let resultPopup = null;
 let selectedText = '';
 let selectedRange = null;
+let selectedElement = null;
 
 // Initialize
 init();
@@ -60,6 +61,12 @@ function createResultPopup() {
   resultPopup.querySelector('.pl-close-btn').addEventListener('click', hideResultPopup);
   resultPopup.querySelector('.pl-copy-btn').addEventListener('click', copyResult);
   resultPopup.querySelector('.pl-replace-btn').addEventListener('click', replaceSelection);
+
+  // Prevent popup clicks from stealing focus (crucial for replacement)
+  resultPopup.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
 }
 
 // Setup event listeners
@@ -95,6 +102,13 @@ function setupEventListeners() {
 
 // Handle text selection
 function handleTextSelection(e) {
+  // Check if extension context is valid
+  try {
+    if (!chrome.runtime?.id) return;
+  } catch (err) {
+    return;
+  }
+
   // Skip if selection is in our popup
   if (resultPopup.contains(e.target) || selectionToolbar.contains(e.target)) return;
   
@@ -104,6 +118,7 @@ function handleTextSelection(e) {
   if (text.length > 5) { // Minimum 5 characters
     selectedText = text;
     selectedRange = selection.getRangeAt(0).cloneRange();
+    selectedElement = document.activeElement;
     showSelectionToolbar(selection);
   } else {
     hideSelectionToolbar();
@@ -162,6 +177,10 @@ async function handleToolbarAction(action) {
   showLoading();
   
   try {
+    if (!chrome.runtime?.id) {
+      throw new Error('Extension context invalidated');
+    }
+
     let response;
     
     switch (action) {
@@ -197,17 +216,21 @@ async function handleToolbarAction(action) {
     }
     
     if (response && response.success) {
-      showResultPopup(response.result, action);
+      showResultPopup(response.result, action, response.model);
     } else {
       showError(response?.error || 'Processing failed');
     }
   } catch (error) {
-    showError(error.message);
+    if (error.message.includes('Extension context invalidated')) {
+      showError('Extension updated. Please refresh the page.');
+    } else {
+      showError(error.message);
+    }
   }
 }
 
 // Show result popup
-function showResultPopup(result, type) {
+function showResultPopup(result, type, model) {
   const typeNames = {
     'grammar': '✏️ Grammar Corrected',
     'rewrite': '🔄 Rewritten',
@@ -218,6 +241,17 @@ function showResultPopup(result, type) {
   resultPopup.querySelector('.pl-result-title').textContent = typeNames[type] || 'Result';
   resultPopup.querySelector('.pl-result-content').textContent = result;
   resultPopup.dataset.result = result;
+
+  // Update privacy note with actual model used
+  const privacyNote = resultPopup.querySelector('.pl-privacy-note');
+  if (model) {
+    privacyNote.textContent = `🔒 ${model}`;
+    if (model.includes('Cloud')) {
+       privacyNote.textContent = `☁️ ${model}`;
+    }
+  } else {
+    privacyNote.textContent = '🔒 Processed locally on your device';
+  }
   
   // Position popup
   positionPopup(resultPopup, selectedRange);
@@ -269,23 +303,29 @@ function replaceSelection() {
   if (!selectedRange || !result) return;
   
   try {
-    // Check if selection is in an editable field
-    const activeElement = document.activeElement;
+    // Use captured element or fall back to active
+    const target = selectedElement || document.activeElement;
     
-    if (activeElement.isContentEditable || 
-        activeElement.tagName === 'TEXTAREA' || 
-        activeElement.tagName === 'INPUT') {
+    // Restore focus
+    if (target && target.isConnected) target.focus();
+
+    if (target.isContentEditable || 
+        target.tagName === 'TEXTAREA' || 
+        target.tagName === 'INPUT') {
       
       // For editable elements
-      const start = activeElement.selectionStart;
-      const end = activeElement.selectionEnd;
-      const value = activeElement.value;
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const value = target.value;
       
-      if (activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'INPUT') {
-        activeElement.value = value.substring(0, start) + result + value.substring(end);
-        activeElement.setSelectionRange(start, start + result.length);
+        target.value = value.substring(0, start) + result + value.substring(end);
+        target.setSelectionRange(start, start + result.length);
       } else {
         // ContentEditable
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(selectedRange);
         document.execCommand('insertText', false, result);
       }
     }

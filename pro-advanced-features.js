@@ -9,7 +9,7 @@
 /**
  * Advanced Proofreading: Multi-pass analysis
  */
-async function advancedProofread(text) {
+export async function advancedProofread(text) {
   if (!text || text.length < 20) {
     throw new Error("Text too short for proofreading");
   }
@@ -75,7 +75,7 @@ function parseProofreadingResult(result) {
 /**
  * Fact-Checking Layer
  */
-async function factCheckText(text) {
+export async function factCheckText(text) {
   if (!text || text.length < 50) {
     throw new Error("Text too short for fact-checking");
   }
@@ -271,7 +271,7 @@ function generateContextSuggestions(text, rules) {
  */
 
 // Shared document management
-async function createSharedDocument(title, content, teamMembers = []) {
+export async function createSharedDocument(title, content, teamMembers = []) {
   const doc = {
     id: 'doc_' + Date.now(),
     title: title,
@@ -299,7 +299,7 @@ async function createSharedDocument(title, content, teamMembers = []) {
 }
 
 // Add comment to document
-async function addDocumentComment(docId, text, position, author = 'current_user') {
+export async function addDocumentComment(docId, text, position, author = 'current_user') {
   const data = await chrome.storage.local.get('sharedDocuments');
   const docs = data.sharedDocuments || [];
   const doc = docs.find(d => d.id === docId);
@@ -324,7 +324,7 @@ async function addDocumentComment(docId, text, position, author = 'current_user'
 }
 
 // Request review
-async function requestReview(docId, reviewers = []) {
+export async function requestReview(docId, reviewers = []) {
   const data = await chrome.storage.local.get('sharedDocuments');
   const docs = data.sharedDocuments || [];
   const doc = docs.find(d => d.id === docId);
@@ -343,7 +343,7 @@ async function requestReview(docId, reviewers = []) {
 }
 
 // Approve document
-async function approveDocument(docId, reviewer = 'current_user', feedback = '') {
+export async function approveDocument(docId, reviewer = 'current_user', feedback = '') {
   const data = await chrome.storage.local.get('sharedDocuments');
   const docs = data.sharedDocuments || [];
   const doc = docs.find(d => d.id === docId);
@@ -372,7 +372,7 @@ async function approveDocument(docId, reviewer = 'current_user', feedback = '') 
  * Writing Analytics & Dashboard Data
  */
 
-async function buildAnalyticsDashboard() {
+export async function buildAnalyticsDashboard() {
   try {
     const data = await chrome.storage.local.get(['history', 'analytics', 'installDate']);
     const history = data.history || [];
@@ -492,7 +492,7 @@ function generateInsights(typeMetrics, history, improvementRate) {
  * Team Writing Standards
  */
 
-async function createTeamStyleGuide(name, rules) {
+export async function createTeamStyleGuide(name, rules) {
   const guide = {
     id: 'guide_' + Date.now(),
     name: name,
@@ -510,7 +510,7 @@ async function createTeamStyleGuide(name, rules) {
   return guide;
 }
 
-async function enforceTeamStandardsOnDoc(docContent, guideId) {
+export async function enforceTeamStandardsOnDoc(docContent, guideId) {
   const data = await chrome.storage.local.get('teamStyleGuides');
   const guides = data.teamStyleGuides || [];
   const guide = guides.find(g => g.id === guideId);

@@ -1,7 +1,7 @@
 // Pro Plus Features Implementation
 // Includes: Batch Processing, Style Guides, Cloud Sync Stub, Team Collaboration Stub
 
-const PRO_PLUS_DEFAULTS = {
+export const PRO_PLUS_DEFAULTS = {
   styleGuide: {
     bannedWords: ['utilize', 'leverage', 'synergy', 'disrupt', 'rockstar', 'ninja'],
     preferredTerms: {
@@ -21,7 +21,7 @@ const PRO_PLUS_DEFAULTS = {
  * @param {string} text 
  * @param {Object} customGuide 
  */
-function analyzeStyleGuide(text, customGuide = null) {
+export function analyzeStyleGuide(text, customGuide = null) {
   const guide = customGuide || PRO_PLUS_DEFAULTS.styleGuide;
   const issues = [];
   
@@ -74,7 +74,7 @@ function analyzeStyleGuide(text, customGuide = null) {
  * @param {Array} items - Array of {id, text}
  * @param {Function} processorFn - Async function to process text
  */
-async function processBatchItems(items, processorFn) {
+export async function processBatchItems(items, processorFn) {
   const results = [];
   const timestamp = new Date().toISOString();
 
@@ -105,7 +105,7 @@ async function processBatchItems(items, processorFn) {
  * Prepares data for Cloud Sync (Pro Plus)
  * @returns {Object} Encrypted-ready payload
  */
-async function prepareCloudSync() {
+export async function prepareCloudSync() {
   const data = await chrome.storage.local.get(null);
   
   // Filter for syncable data

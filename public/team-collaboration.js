@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const members = document.getElementById('docTeamMembers').value.split(',').map(e => e.trim());
 
     if (!title || !content) {
-      alert('Please fill in title and content');
+      showToast('Please fill in title and content', 'error');
       return;
     }
 
@@ -34,12 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.success) {
-        alert('Document created!');
+        showToast('Document created successfully!');
         document.getElementById('docTitle').value = '';
         document.getElementById('docContent').value = '';
         loadDocuments();
       } else {
-        alert('Error: ' + response.error);
+        showToast('Error: ' + response.error, 'error');
       }
     } catch (e) {
       console.error(e);
@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const required = document.getElementById('requiredTerms').value.split(',').map(w => w.trim()).filter(w => w);
 
     if (!name) {
-      alert('Please enter a standard name');
+      showToast('Please enter a standard name', 'error');
       return;
     }
 
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (response.success) {
-        alert('Standard created!');
+        showToast('Standard created successfully!');
         loadStandards();
       }
     } catch (e) {
@@ -122,3 +122,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// --- Toast Notification System ---
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;";
+    document.body.appendChild(container);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+      .toast.success { background: #10b981; }
+      .toast.error { background: #ef4444; }
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}

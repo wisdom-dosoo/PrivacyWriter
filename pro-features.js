@@ -1,5 +1,5 @@
 // Expanded language support for Pro users (50+ languages)
-const PRO_LANGUAGES = {
+export const PRO_LANGUAGES = {
   'af': 'Afrikaans', 'sq': 'Albanian', 'am': 'Amharic', 'ar': 'Arabic', 'hy': 'Armenian',
   'az': 'Azerbaijani', 'eu': 'Basque', 'be': 'Belarusian', 'bn': 'Bengali', 'bs': 'Bosnian',
   'bg': 'Bulgarian', 'ca': 'Catalan', 'ceb': 'Cebuano', 'ny': 'Chichewa', 'zh': 'Chinese',
@@ -24,12 +24,12 @@ const PRO_LANGUAGES = {
 };
 
 // Free tier limited to 6 core languages
-const FREE_LANGUAGES = ['es', 'fr', 'de', 'zh', 'ja', 'pt'];
+export const FREE_LANGUAGES = ['es', 'fr', 'de', 'zh', 'ja', 'pt'];
 
 /**
  * AI Writing Coach: Analyzes text for quality, tone, and clarity with structured feedback
  */
-async function analyzeWritingQuality(text) {
+export async function analyzeWritingQuality(text) {
   if (!text || text.length < 10) throw new Error("Text too short for analysis");
   
   // Use Prompt API
@@ -75,7 +75,7 @@ async function analyzeWritingQuality(text) {
 /**
  * Content Generator: Generates content based on templates (20+ templates)
  */
-const CONTENT_TEMPLATES = {
+export const CONTENT_TEMPLATES = {
   // Email Templates
   'email-professional': { name: 'Professional Email', prompt: 'Write a professional business email about: ' },
   'email-complaint': { name: 'Complaint Email', prompt: 'Write a professional complaint email about: ' },
@@ -114,7 +114,7 @@ const CONTENT_TEMPLATES = {
   'simplify': { name: 'Simplify', prompt: 'Rewrite this to be simple, clear and easy to understand: ' },
 };
 
-async function generateContent(templateType, params) {
+export async function generateContent(templateType, params) {
   const template = CONTENT_TEMPLATES[templateType];
   if (!template) throw new Error(`Unknown template: ${templateType}`);
 
@@ -149,7 +149,7 @@ async function generateContent(templateType, params) {
 /**
  * History Manager: Saves actions to local storage for Pro users
  */
-async function saveHistoryItem(type, original, result) {
+export async function saveHistoryItem(type, original, result) {
   try {
     const data = await chrome.storage.local.get(['history', 'isPro']);
     
@@ -180,7 +180,7 @@ async function saveHistoryItem(type, original, result) {
 /**
  * Smart History Search and Filter
  */
-async function searchHistory(query, filters = {}) {
+export async function searchHistory(query, filters = {}) {
   try {
     const data = await chrome.storage.local.get('history');
     let history = data.history || [];
@@ -216,7 +216,7 @@ async function searchHistory(query, filters = {}) {
 /**
  * Export History to PDF/CSV
  */
-async function exportHistory(format = 'csv') {
+export async function exportHistory(format = 'csv') {
   try {
     const data = await chrome.storage.local.get('history');
     const history = data.history || [];
@@ -248,7 +248,7 @@ async function exportHistory(format = 'csv') {
  * Personal Writing Style Profile
  * Learns user's unique writing patterns
  */
-async function buildWritingProfile() {
+export async function buildWritingProfile() {
   try {
     const data = await chrome.storage.local.get('history');
     const history = data.history || [];
@@ -333,7 +333,7 @@ async function buildWritingProfile() {
 /**
  * Get Writing Profile
  */
-async function getWritingProfile() {
+export async function getWritingProfile() {
   try {
     const data = await chrome.storage.local.get('writingProfile');
     return data.writingProfile || null;
@@ -345,7 +345,7 @@ async function getWritingProfile() {
 /**
  * Personalize suggestions based on writing profile
  */
-async function personalizeSuggestion(suggestion, text) {
+export async function personalizeSuggestion(suggestion, text) {
   try {
     const profile = await getWritingProfile();
     if (!profile) return suggestion;
@@ -371,7 +371,7 @@ async function personalizeSuggestion(suggestion, text) {
  * Checks text for potential fact accuracy issues and sensitive claims
  * @param {string} text 
  */
-async function checkFacts(text) {
+export async function checkFacts(text) {
   if (!text || text.length < 20) {
     return {
       score: 100,
@@ -382,21 +382,58 @@ async function checkFacts(text) {
   }
 
   try {
-    // Step 1: Extract factual claims
-    const claims = extractClaims(text);
-    
-    // Step 2: Check for sensitive topics
+    // Step 1: Fast Static Analysis (Regex)
+    const regexClaims = extractClaims(text);
     const sensitivityFlags = checkSensitiveContent(text);
+    const regexWarnings = identifyUnverifiableClaims(regexClaims);
     
-    // Step 3: Identify unverifiable statements
-    const warnings = identifyUnverifiableClaims(claims);
+    let aiResults = null;
 
-    const score = Math.max(0, 100 - (warnings.length * 10) - (sensitivityFlags.length * 5));
+    // Step 2: Deep AI Analysis (Pro Feature)
+    // Enhances accuracy by understanding context, not just patterns
+    if ('ai' in self && 'languageModel' in self.ai) {
+      try {
+        const session = await self.ai.languageModel.create({
+          systemPrompt: "You are an expert fact-checker. Analyze text for credibility, logical fallacies, and unverifiable claims. Return JSON."
+        });
+
+        const prompt = `Analyze this text. Return JSON with 'score' (0-100), 'warnings' (array of strings), and 'keyClaims' (array of strings).
+        Text: "${text.substring(0, 1500)}"
+        JSON:`;
+
+        const result = await session.prompt(prompt);
+        session.destroy();
+
+        const cleanResult = result.replace(/```json/g, '').replace(/```/g, '').trim();
+        aiResults = JSON.parse(cleanResult);
+      } catch (e) {
+        console.warn("AI Fact Check unavailable or failed, using static analysis:", e);
+      }
+    }
+
+    // Step 3: Merge Results
+    if (aiResults) {
+      const aiWarnings = (aiResults.warnings || []).map(w => ({
+        severity: 'medium',
+        message: w,
+        suggestion: 'Verify with reliable source'
+      }));
+
+      return {
+        score: Math.round((aiResults.score + (100 - regexWarnings.length * 10)) / 2),
+        warnings: [...aiWarnings, ...regexWarnings],
+        claims: regexClaims, 
+        sensitivityFlags: sensitivityFlags
+      };
+    }
+
+    // Fallback to static scoring
+    const score = Math.max(0, 100 - (regexWarnings.length * 10) - (sensitivityFlags.length * 5));
 
     return {
       score: Math.min(100, score),
-      warnings: warnings,
-      claims: claims.slice(0, 5), // Top 5 claims
+      warnings: regexWarnings,
+      claims: regexClaims.slice(0, 5),
       sensitivityFlags: sensitivityFlags
     };
   } catch (error) {
@@ -494,7 +531,7 @@ function identifyUnverifiableClaims(claims) {
 /**
  * Retrieve fact-check results for display
  */
-function getFactCheckResults(text) {
+export function getFactCheckResults(text) {
   return checkFacts(text);
 }
 
@@ -502,7 +539,7 @@ function getFactCheckResults(text) {
  * Context Detection: Analyzes text to determine writing context
  * Detects: professional, academic, casual, technical, creative, marketing, legal, social-media
  */
-async function detectContext(text, userSelectedContext = null) {
+export async function detectContext(text, userSelectedContext = null) {
   if (!text || text.length < 20) {
     throw new Error('Text too short for context detection');
   }

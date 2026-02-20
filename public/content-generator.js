@@ -62,22 +62,15 @@ function clearForm() {
   document.getElementById('resultBox').classList.remove('visible');
 }
 
-function showStatus(message, isError = false) {
-  const statusEl = document.getElementById('statusMessage');
-  statusEl.textContent = message;
-  statusEl.className = isError ? 'status-message visible status-error' : 'status-message visible status-success';
-  setTimeout(() => statusEl.classList.remove('visible'), 5000);
-}
-
 async function generateContent() {
   if (!selectedTemplate) {
-    showStatus('Please select a template first', true);
+    showToast('Please select a template first', 'error');
     return;
   }
 
   const topic = document.getElementById('topic').value.trim();
   if (!topic) {
-    showStatus('Please enter a topic', true);
+    showToast('Please enter a topic', 'error');
     return;
   }
 
@@ -86,7 +79,6 @@ async function generateContent() {
   
   generateBtn.disabled = true;
   generateBtn.classList.add('loading');
-  showStatus('Generating content...');
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -100,12 +92,12 @@ async function generateContent() {
     if (response.success) {
       lastGenerated = response.result;
       displayResult(response.result);
-      showStatus('✅ Content generated successfully!');
+      showToast('Content generated successfully!');
     } else {
-      showStatus(`Error: ${response.error}`, true);
+      showToast(`Error: ${response.error}`, 'error');
     }
   } catch (error) {
-    showStatus(`Error: ${error.message}`, true);
+    handleExtensionError(error);
   } finally {
     generateBtn.disabled = false;
     generateBtn.classList.remove('loading');
@@ -123,9 +115,9 @@ function copyResult() {
   if (!lastGenerated) return;
   
   navigator.clipboard.writeText(lastGenerated).then(() => {
-    showStatus('✅ Copied to clipboard!');
+    showToast('Copied to clipboard!');
   }).catch(err => {
-    showStatus('Failed to copy', true);
+    showToast('Failed to copy', 'error');
   });
 }
 
@@ -145,15 +137,57 @@ function downloadResult() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   
-  showStatus('✅ Downloaded!');
+  showToast('Downloaded!');
 }
 
 function useInBatch() {
   if (!lastGenerated) return;
-  showStatus('Open Batch Processor and paste the generated content', false);
+  showToast('Open Batch Processor and paste the generated content');
   // Could also open batch processor in a new tab
   // chrome.tabs.create({ url: chrome.runtime.getURL('public/batch-processor.html') });
 }
 
+function handleExtensionError(error) {
+  console.error(error);
+  if (error.message.includes('Extension context invalidated')) {
+    showToast('Extension updated. Reloading page...', 'error');
+    setTimeout(() => location.reload(), 2000);
+  } else {
+    showToast('Error: ' + error.message, 'error');
+  }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initializeTemplates);
+
+// --- Toast Notification System ---
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;";
+    document.body.appendChild(container);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+      .toast.success { background: #10b981; }
+      .toast.error { background: #ef4444; }
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}

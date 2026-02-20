@@ -262,6 +262,8 @@
       margin-bottom: 20px;
       flex-wrap: wrap;
       border-bottom: 2px solid var(--border);
+      overflow-x: auto; /* Allow scrolling on mobile */
+      white-space: nowrap;
     }
     
     .settings-tab {
@@ -321,6 +323,10 @@
       
       button {
         width: 100%;
+      }
+      
+      .settings-tabs {
+        flex-wrap: nowrap; /* Force single line scroll on mobile */
       }
     }
   </style>

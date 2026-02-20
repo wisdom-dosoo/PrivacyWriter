@@ -27,11 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const text = textInput.value.trim();
 
     if (text.length < 20) {
-      showStatus('Please enter at least 20 characters to analyze.', 'error');
+      showToast('Please enter at least 20 characters to analyze.', 'error');
       return;
     }
 
-    showStatus('Analyzing context...', 'success'); // Using success style for info
     analyzeBtn.disabled = true;
     analyzeBtn.innerHTML = '<span class="loading"></span> Analyzing...';
 
@@ -44,13 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.success) {
         displayResults(response.data);
-        showStatus('Analysis complete!', 'success');
+        showToast('Analysis complete!');
       } else {
-        showStatus(response.error || 'Analysis failed.', 'error');
+        showToast(response.error || 'Analysis failed.', 'error');
       }
     } catch (error) {
-      showStatus('Error connecting to AI service.', 'error');
-      console.error(error);
+      handleExtensionError(error);
     } finally {
       analyzeBtn.disabled = false;
       analyzeBtn.textContent = '🔍 Analyze Context';
@@ -113,11 +111,45 @@ document.addEventListener('DOMContentLoaded', () => {
     detectionResult.scrollIntoView({ behavior: 'smooth' });
   }
 
-  function showStatus(msg, type) {
-    statusMessage.textContent = msg;
-    statusMessage.className = `status-message visible ${type}`;
-    setTimeout(() => {
-      if (type === 'success' && msg !== 'Analyzing context...') statusMessage.classList.remove('visible');
-    }, 3000);
+  function handleExtensionError(error) {
+    console.error(error);
+    if (error.message.includes('Extension context invalidated')) {
+      showToast('Extension updated. Reloading page...', 'error');
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      showToast('Error: ' + error.message, 'error');
+    }
   }
 });
+
+// --- Toast Notification System ---
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;";
+    document.body.appendChild(container);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      .toast { background: #333; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+      .toast.success { background: #10b981; }
+      .toast.error { background: #ef4444; }
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}

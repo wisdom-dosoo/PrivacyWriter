@@ -1,141 +1,214 @@
-// Cloud Sync JS - handles encryption, export, import, and restore
-(function(){
-  const el = id => document.getElementById(id);
-  const status = el('status');
-  const preview = el('preview');
-  const previewContent = el('previewContent');
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load saved settings
+  const { settings } = await chrome.storage.local.get('settings');
+  if (settings?.cloudSyncUrl) document.getElementById('uploadUrl').value = settings.cloudSyncUrl;
+  if (settings?.cloudSyncToken) document.getElementById('uploadToken').value = settings.cloudSyncToken;
 
-  function setStatus(msg, err=false){ status.textContent = msg; status.style.color = err ? 'crimson' : ''; }
+  // Event Listeners
+  document.getElementById('saveServer').addEventListener('click', saveServerConfig);
+  document.getElementById('pushServer').addEventListener('click', pushToServer);
+  document.getElementById('exportBtn').addEventListener('click', () => exportBackup(true));
+  document.getElementById('exportRaw').addEventListener('click', () => exportBackup(false));
+  document.getElementById('importBtn').addEventListener('click', importBackup);
+  document.getElementById('restoreBtn').addEventListener('click', restoreData);
+});
 
-  // Helpers: base64 conversions
-  function bufToBase64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
-  function base64ToBuf(b64){ const s = atob(b64); const arr = new Uint8Array(s.length); for(let i=0;i<s.length;i++) arr[i]=s.charCodeAt(i); return arr.buffer; }
+async function saveServerConfig() {
+  const url = document.getElementById('uploadUrl').value.trim();
+  const token = document.getElementById('uploadToken').value.trim();
 
-  async function deriveKey(pass, salt){
-    const enc = new TextEncoder();
-    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pass), {name:'PBKDF2'}, false, ['deriveKey']);
-    return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'}, keyMaterial, {name:'AES-GCM', length:256}, true, ['encrypt','decrypt']);
+  const { settings = {} } = await chrome.storage.local.get('settings');
+  settings.cloudSyncUrl = url;
+  settings.cloudSyncToken = token;
+
+  await chrome.storage.local.set({ settings });
+  showToast('Server configuration saved');
+}
+
+async function pushToServer() {
+  const url = document.getElementById('uploadUrl').value.trim();
+  if (!url) return showToast('Please configure a server URL first', 'error');
+
+  showToast('Syncing...');
+  
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'syncCloud' });
+    if (response.success) {
+      showToast('✅ Sync successful!');
+    } else {
+      showToast('Sync failed: ' + response.error, 'error');
+    }
+  } catch (error) {
+    handleExtensionError(error);
   }
+}
 
-  async function encryptJSON(obj, pass){
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const key = await deriveKey(pass, salt);
-    const enc = new TextEncoder();
-    const data = enc.encode(JSON.stringify(obj));
-    const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, data);
-    return { salt: bufToBase64(salt), iv: bufToBase64(iv), data: bufToBase64(ct) };
+async function exportBackup(encrypt) {
+  const pass = document.getElementById('exportPass').value;
+  if (encrypt && !pass) return showToast('Please enter a password to encrypt', 'error');
+
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'getCloudPayload' });
+    if (!response.success) throw new Error(response.error);
+
+    let data = JSON.stringify(response.payload);
+    let filename = `privacylens_backup_${new Date().toISOString().slice(0,10)}.json`;
+
+    if (encrypt) {
+      data = await encryptData(data, pass);
+      filename = filename.replace('.json', '.enc.json');
+    }
+
+    downloadFile(filename, data, 'application/json');
+    showToast('Backup exported successfully');
+  } catch (error) {
+    handleExtensionError(error);
   }
+}
 
-  async function decryptJSON(blob, pass){
-    const salt = base64ToBuf(blob.salt);
-    const iv = base64ToBuf(blob.iv);
-    const ct = base64ToBuf(blob.data);
-    const key = await deriveKey(pass, new Uint8Array(salt));
-    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv: new Uint8Array(iv)}, key, ct);
-    return JSON.parse(new TextDecoder().decode(pt));
-  }
+async function importBackup() {
+  const fileInput = document.getElementById('fileInput');
+  const file = fileInput.files[0];
+  const pass = document.getElementById('importPass').value;
 
-  async function download(filename, content){
-    const a = document.createElement('a');
-    const blob = new Blob([content], {type:'application/json'});
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
+  if (!file) return showToast('Please select a file', 'error');
 
-  // UI actions
-  el('saveServer').addEventListener('click', async ()=>{
-    const url = el('uploadUrl').value.trim();
-    const token = el('uploadToken').value.trim();
-    await chrome.storage.local.set({ settings: Object.assign({}, (await chrome.storage.local.get('settings')).settings, { cloudSyncUrl: url || undefined, cloudSyncToken: token || undefined }) });
-    setStatus('Server settings saved.');
-  });
-
-  el('pushServer').addEventListener('click', async ()=>{
-    setStatus('Pushing to server...');
-    const { success, status: st, error } = await new Promise(resolve => chrome.runtime.sendMessage({ action: 'syncCloud' }, resolve));
-    if (success) setStatus('Push completed: ' + st);
-    else setStatus('Push failed: ' + (error||'unknown'), true);
-  });
-
-  el('exportRaw').addEventListener('click', async ()=>{
-    setStatus('Preparing raw export...');
-    const res = await new Promise(resolve => chrome.runtime.sendMessage({ action: 'getCloudPayload' }, resolve));
-    if (!res.success) { setStatus('Failed: ' + res.error, true); return; }
-    download('privacywriter-backup.json', JSON.stringify(res.payload, null, 2));
-    setStatus('Raw backup downloaded.');
-  });
-
-  el('exportBtn').addEventListener('click', async ()=>{
-    const pass = el('exportPass').value;
-    if (!pass) { setStatus('Enter a passphrase to encrypt the backup', true); return; }
-    setStatus('Preparing encrypted export...');
-    const res = await new Promise(resolve => chrome.runtime.sendMessage({ action: 'getCloudPayload' }, resolve));
-    if (!res.success) { setStatus('Failed to prepare payload: ' + res.error, true); return; }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
     try {
-      const enc = await encryptJSON(res.payload, pass);
-      download('privacywriter-backup-encrypted.json', JSON.stringify({ version: '1', encrypted: true, payload: enc }, null, 2));
-      setStatus('Encrypted backup downloaded.');
-    } catch (e) { setStatus('Encryption failed: ' + e.message, true); }
-  });
+      let content = e.target.result;
 
-  el('fileInput').addEventListener('change', ()=>{ setStatus('File selected. Click Import & Decrypt.'); });
-
-  el('importBtn').addEventListener('click', async ()=>{
-    const f = el('fileInput').files[0];
-    if (!f) { setStatus('Select a backup file first', true); return; }
-    setStatus('Reading file...');
-    const text = await f.text();
-    let parsed;
-    try { parsed = JSON.parse(text); } catch(e){ setStatus('Invalid JSON file', true); return; }
-
-    try {
-      let payload = null;
-      if (parsed.encrypted && parsed.payload) {
-        const pass = el('importPass').value;
-        if (!pass) { setStatus('Enter passphrase for encrypted backup', true); return; }
-        payload = await decryptJSON(parsed.payload, pass);
-      } else if (parsed.payload) {
-        payload = parsed.payload;
-      } else {
-        payload = parsed;
+      // Try to detect if encrypted (basic check)
+      if (file.name.includes('.enc') || !content.trim().startsWith('{')) {
+        if (!pass) return showToast('Password required for encrypted file', 'error');
+        content = await decryptData(content, pass);
       }
 
-      previewContent.textContent = JSON.stringify(payload, null, 2);
-      preview.style.display = 'block';
-      setStatus('Backup decrypted and ready to preview. Click Restore to restore to extension.');
-      // keep last parsed for restore
-      window.__lastParsedBackup = payload;
-    } catch (e) { setStatus('Decryption/parse failed: ' + e.message, true); }
-  });
+      const payload = JSON.parse(content);
+      
+      // Show preview
+      document.getElementById('preview').style.display = 'block';
+      document.getElementById('previewContent').textContent = JSON.stringify(payload, null, 2).substring(0, 500) + '...';
+      
+      // Store for restore
+      window.pendingRestore = payload;
+      showToast('File loaded. Click Restore to apply.');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to parse or decrypt file. Wrong password?', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
 
-  el('previewBtn').addEventListener('click', async ()=>{
-    const data = await chrome.storage.local.get('lastCloudExport');
-    if (!data.lastCloudExport) { setStatus('No local export found', true); return; }
-    previewContent.textContent = JSON.stringify(data.lastCloudExport.payload, null, 2);
-    preview.style.display = 'block';
-    window.__lastParsedBackup = data.lastCloudExport.payload;
-    setStatus('Previewing last local export.');
-  });
+async function restoreData() {
+  if (!window.pendingRestore) return;
 
-  el('restoreBtn').addEventListener('click', async ()=>{
-    const payload = window.__lastParsedBackup;
-    if (!payload) { setStatus('Nothing to restore', true); return; }
-    setStatus('Restoring payload to extension...');
-    const res = await new Promise(resolve => chrome.runtime.sendMessage({ action: 'restoreCloudPayload', payload }, resolve));
-    if (res.success) { setStatus('Restore completed successfully.'); }
-    else setStatus('Restore failed: ' + res.error, true);
-  });
+  if (!confirm('⚠️ This will overwrite your current settings and history. Continue?')) return;
 
-  // Initialize with saved server settings
-  (async ()=>{
-    const s = await chrome.storage.local.get('settings');
-    const settings = s.settings || {};
-    if (settings.cloudSyncUrl) el('uploadUrl').value = settings.cloudSyncUrl;
-    if (settings.cloudSyncToken) el('uploadToken').value = settings.cloudSyncToken;
-  })();
+  try {
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'restoreCloudPayload', 
+      payload: window.pendingRestore 
+    });
 
-})();
+    if (response.success) {
+      showToast('✅ Data restored successfully!');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast('Restore failed: ' + response.error, 'error');
+    }
+  } catch (error) {
+    handleExtensionError(error);
+  }
+}
+
+// --- Crypto Utilities (Web Crypto API) ---
+
+async function encryptData(text, password) {
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+  );
+  
+  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+  const key = await window.crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
+  );
+
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv }, key, enc.encode(text)
+  );
+
+  // Pack salt + iv + data
+  const buffer = new Uint8Array(salt.byteLength + iv.byteLength + encrypted.byteLength);
+  buffer.set(salt, 0);
+  buffer.set(iv, salt.byteLength);
+  buffer.set(new Uint8Array(encrypted), salt.byteLength + iv.byteLength);
+
+  return btoa(String.fromCharCode(...buffer));
+}
+
+async function decryptData(base64, password) {
+  const binary = atob(base64);
+  const buffer = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
+
+  const salt = buffer.slice(0, 16);
+  const iv = buffer.slice(16, 28);
+  const data = buffer.slice(28);
+
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+  );
+
+  const key = await window.crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+  );
+
+  const decrypted = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv }, key, data
+  );
+
+  return new TextDecoder().decode(decrypted);
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function handleExtensionError(error) {
+  console.error(error);
+  if (error.message.includes('Extension context invalidated')) {
+    showToast('Extension updated. Reloading page...', 'error');
+    setTimeout(() => location.reload(), 2000);
+  } else {
+    showToast('Error: ' + error.message, 'error');
+  }
+}
+
+function showToast(message, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.remove(); }, 3000);
+}
