@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writing Profile - PrivacyWriter</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div style="display: flex; align-items: center;">
+      <a href="../sidepanel.html" class="btn btn-secondary" style="margin-right: 1rem; padding: 0.4rem 0.8rem; text-decoration: none;">←</a>
+      <a href="#" class="brand">🔒 PrivacyWriter</a>
+    </div>
+    <span class="tag">Pro Feature</span>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Your Writing DNA</h1>
+        <button class="btn" onclick="buildProfile()">🔄 Refresh Profile</button>
+      </div>
+      
+      <div id="emptyState" style="text-align: center; padding: 3rem; display: none;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+        <h3>No Profile Yet</h3>
+        <p style="color: var(--text-muted);">Use PrivacyWriter to correct at least 20 sentences to generate your unique profile.</p>
+        <button class="btn" onclick="buildProfile()" style="margin-top: 1rem;">Generate Profile</button>
+      </div>
+
+      <div id="profileContent">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+          <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+            <small style="color: var(--text-muted);">Sample Size</small>
+            <div id="sampleSize" style="font-size: 1.5rem; font-weight: bold;">0</div>
+          </div>
+          <div style="background: #f9fafb; padding: 1rem; border-radius: 8px;">
+            <small style="color: var(--text-muted);">Confidence</small>
+            <div id="profileReady" style="font-size: 1.5rem;">-</div>
+          </div>
+        </div>
+
+        <h3>Characteristics</h3>
+        <div class="card" style="border-left: 4px solid var(--primary);">
+          <p><strong>Sentence Length:</strong> <span id="avgSentenceLength">-</span></p>
+          <p><strong>Vocabulary:</strong> <span id="vocabLevel">-</span></p>
+          <p><strong>Style:</strong> <span id="writingStyle">-</span></p>
+        </div>
+
+        <h3>Strengths</h3>
+        <div id="strengthsList"></div>
+
+        <h3>Areas for Improvement</h3>
+        <div id="improvementList"></div>
+
+        <h3>Common Patterns</h3>
+        <div id="patternsList" style="margin-bottom: 1.5rem;"></div>
+
+        <p id="personalizationTip" style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="writing-profile.js"></script>
+</body>
+</html>

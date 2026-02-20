@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Batch Processing - PrivacyWriter</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div style="display: flex; align-items: center;">
+      <a href="../sidepanel.html" class="btn btn-secondary" style="margin-right: 1rem; padding: 0.4rem 0.8rem; text-decoration: none;">←</a>
+      <a href="#" class="brand">🔒 PrivacyWriter</a>
+    </div>
+    <span class="tag">Pro Plus</span>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h1>Batch Processor</h1>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Process multiple texts or files at once using the same AI settings.</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+        <div>
+          <label><strong>Action</strong></label>
+          <select>
+            <option>Grammar Check</option>
+            <option>Rewrite (Professional)</option>
+            <option>Summarize</option>
+            <option>Translate</option>
+          </select>
+
+          <label><strong>Input Method</strong></label>
+          <div style="border: 2px dashed var(--border); padding: 2rem; text-align: center; border-radius: 8px; cursor: pointer;">
+            📂 Drop files here<br><small>(.txt, .md, .json)</small>
+          </div>
+        </div>
+        <div>
+          <label><strong>Queue</strong></label>
+          <div style="background: #f9fafb; height: 300px; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+            No items in queue
+          </div>
+          <button class="btn" style="width: 100%; margin-top: 1rem;">Start Processing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Content Generator - PrivacyWriter</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div style="display: flex; align-items: center;">
+      <a href="../sidepanel.html" class="btn btn-secondary" style="margin-right: 1rem; padding: 0.4rem 0.8rem; text-decoration: none;">←</a>
+      <a href="#" class="brand">🔒 PrivacyWriter</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h1>AI Content Generator</h1>
+      
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+        <div style="border-right: 1px solid var(--border); padding-right: 2rem;">
+          <h3>Templates</h3>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button class="btn btn-secondary" style="justify-content: start;">📧 Email: Professional</button>
+            <button class="btn btn-secondary" style="justify-content: start;">📧 Email: Follow-up</button>
+            <button class="btn btn-secondary" style="justify-content: start;">📝 Blog Post Intro</button>
+            <button class="btn btn-secondary" style="justify-content: start;">📱 LinkedIn Post</button>
+            <button class="btn btn-secondary" style="justify-content: start;">📄 Cover Letter</button>
+          </div>
+        </div>
+
+        <div>
+          <h3>Details</h3>
+          <label>Topic / Key Points</label>
+          <textarea rows="4" placeholder="What should this content be about?"></textarea>
+          
+          <label>Audience</label>
+          <input type="text" placeholder="e.g., Hiring Manager, Potential Clients">
+          
+          <button class="btn" style="width: 100%;">✨ Generate Content</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

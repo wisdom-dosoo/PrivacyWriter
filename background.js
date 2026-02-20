@@ -198,47 +198,12 @@ function createContextMenus() {
       contexts: ['selection']
     });
     
-    // Grammar check
+    // --- FREE TIER ---
+    
     chrome.contextMenus.create({
       id: 'checkGrammar',
       parentId: 'privacylens',
-      title: '✏️ Check Grammar & Spelling',
-      contexts: ['selection']
-    });
-    
-    // Rewrite options
-    chrome.contextMenus.create({
-      id: 'rewrite',
-      parentId: 'privacylens',
-      title: '🔄 Rewrite',
-      contexts: ['selection']
-    });
-    
-    chrome.contextMenus.create({
-      id: 'rewrite-professional',
-      parentId: 'rewrite',
-      title: '💼 Make Professional',
-      contexts: ['selection']
-    });
-    
-    chrome.contextMenus.create({
-      id: 'rewrite-casual',
-      parentId: 'rewrite',
-      title: '😊 Make Casual',
-      contexts: ['selection']
-    });
-    
-    chrome.contextMenus.create({
-      id: 'rewrite-shorter',
-      parentId: 'rewrite',
-      title: '📝 Make Shorter',
-      contexts: ['selection']
-    });
-    
-    chrome.contextMenus.create({
-      id: 'rewrite-longer',
-      parentId: 'rewrite',
-      title: '📄 Make Longer',
+      title: '✏️ Check Grammar',
       contexts: ['selection']
     });
     
@@ -249,8 +214,45 @@ function createContextMenus() {
       title: '📋 Summarize',
       contexts: ['selection']
     });
+
+    // Rewrite (Group)
+    chrome.contextMenus.create({
+      id: 'rewrite',
+      parentId: 'privacylens',
+      title: '🔄 Rewrite',
+      contexts: ['selection']
+    });
     
-    // Translate
+    // Free Tones
+    chrome.contextMenus.create({
+      id: 'rewrite-professional',
+      parentId: 'rewrite',
+      title: '💼 Professional',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-casual',
+      parentId: 'rewrite',
+      title: '😊 Casual',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-shorter',
+      parentId: 'rewrite',
+      title: '📝 Shorter',
+      contexts: ['selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'rewrite-longer',
+      parentId: 'rewrite',
+      title: '📄 Longer',
+      contexts: ['selection']
+    });
+    
+    // Translate (Group)
     chrome.contextMenus.create({
       id: 'translate',
       parentId: 'privacylens',
@@ -258,6 +260,7 @@ function createContextMenus() {
       contexts: ['selection']
     });
     
+    // Free Languages
     chrome.contextMenus.create({
       id: 'translate-es',
       parentId: 'translate',
@@ -290,6 +293,51 @@ function createContextMenus() {
       id: 'translate-ja',
       parentId: 'translate',
       title: '🇯🇵 Japanese',
+      contexts: ['selection']
+    });
+
+    // --- PRO TIER SEPARATOR ---
+    chrome.contextMenus.create({
+      id: 'sep-pro',
+      parentId: 'privacylens',
+      type: 'separator',
+      contexts: ['selection']
+    });
+
+    // Pro Tones (in Rewrite menu)
+    chrome.contextMenus.create({ id: 'sep-rewrite-pro', parentId: 'rewrite', type: 'separator', contexts: ['selection'] });
+    chrome.contextMenus.create({ id: 'rewrite-executive', parentId: 'rewrite', title: '⭐ Executive (Pro)', contexts: ['selection'] });
+    chrome.contextMenus.create({ id: 'rewrite-academic', parentId: 'rewrite', title: '⭐ Academic (Pro)', contexts: ['selection'] });
+    chrome.contextMenus.create({ id: 'rewrite-persuasive', parentId: 'rewrite', title: '⭐ Persuasive (Pro)', contexts: ['selection'] });
+
+    // Pro Features
+    chrome.contextMenus.create({
+      id: 'analyzeWriting',
+      parentId: 'privacylens',
+      title: '🧠 AI Coach: Analyze (Pro)',
+      contexts: ['selection']
+    });
+
+    chrome.contextMenus.create({
+      id: 'detectContext',
+      parentId: 'privacylens',
+      title: '🔍 Detect Context (Pro)',
+      contexts: ['selection']
+    });
+
+    // --- PRO PLUS TIER SEPARATOR ---
+    chrome.contextMenus.create({
+      id: 'sep-pro-plus',
+      parentId: 'privacylens',
+      type: 'separator',
+      contexts: ['selection']
+    });
+
+    // Pro Plus Features
+    chrome.contextMenus.create({
+      id: 'factCheck',
+      parentId: 'privacylens',
+      title: '🛡️ Fact Check (Pro+)',
       contexts: ['selection']
     });
   });
@@ -342,61 +390,52 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   let action = '';
   
   try {
-    switch (info.menuItemId) {
-      case 'checkGrammar':
-        action = 'grammar';
-        result = await checkGrammar(text);
-        break;
-        
-      case 'rewrite-professional':
-        action = 'rewrite';
-        result = await rewriteText(text, 'more-formal');
-        break;
-        
-      case 'rewrite-casual':
-        action = 'rewrite';
-        result = await rewriteText(text, 'more-casual');
-        break;
-        
-      case 'rewrite-shorter':
-        action = 'rewrite';
-        result = await rewriteText(text, 'shorter');
-        break;
-        
-      case 'rewrite-longer':
-        action = 'rewrite';
-        result = await rewriteText(text, 'longer');
-        break;
-        
-      case 'summarize':
-        action = 'summarize';
-        result = await summarizeText(text);
-        break;
-        
-      case 'translate-es':
-        action = 'translate';
-        result = await translateText(text, 'es');
-        break;
-        
-      case 'translate-fr':
-        action = 'translate';
-        result = await translateText(text, 'fr');
-        break;
-        
-      case 'translate-de':
-        action = 'translate';
-        result = await translateText(text, 'de');
-        break;
-        
-      case 'translate-zh':
-        action = 'translate';
-        result = await translateText(text, 'zh');
-        break;
-        
-      case 'translate-ja':
-        action = 'translate';
-        result = await translateText(text, 'ja');
-        break;
+    const menuId = info.menuItemId;
+
+    if (menuId === 'checkGrammar') {
+      action = 'grammar';
+      result = await checkGrammar(text);
+    } 
+    else if (menuId === 'summarize') {
+      action = 'summarize';
+      result = await summarizeText(text);
+    }
+    else if (menuId.startsWith('rewrite-')) {
+      action = 'rewrite';
+      const styleKey = menuId.replace('rewrite-', '');
+      const styleMap = {
+        'professional': 'more-formal',
+        'casual': 'more-casual',
+        'shorter': 'shorter',
+        'longer': 'longer',
+        'executive': 'executive',
+        'academic': 'academic',
+        'persuasive': 'persuasive'
+      };
+      // Default to the key itself if not in map
+      const style = styleMap[styleKey] || styleKey;
+      result = await rewriteText(text, style);
+    }
+    else if (menuId.startsWith('translate-')) {
+      action = 'translate';
+      const lang = menuId.replace('translate-', '');
+      result = await translateText(text, lang);
+    }
+    else if (menuId === 'analyzeWriting') {
+      action = 'coach';
+      const analysis = await analyzeWritingQuality(text);
+      result = `**Score: ${analysis.score}/100**\n\n${analysis.feedback}\n\n**Issues:**\n• ${analysis.issues.join('\n• ')}`;
+    }
+    else if (menuId === 'detectContext') {
+      action = 'context';
+      const ctx = await detectContext(text);
+      result = `**Context:** ${ctx.detectedContext} (${ctx.confidence}%)\n**Tone:** ${ctx.tone}\n**Audience:** ${ctx.audience}`;
+    }
+    else if (menuId === 'factCheck') {
+      action = 'fact-check';
+      const fc = await checkFacts(text);
+      const warnings = fc.warnings.length > 0 ? fc.warnings.map(w => `⚠️ ${w.message}`).join('\n') : '✅ No issues found.';
+      result = `**Fact Check Score: ${fc.score}/100**\n\n${warnings}`;
     }
     
     if (result) {
