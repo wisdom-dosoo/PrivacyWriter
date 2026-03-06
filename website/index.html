@@ -23,35 +23,47 @@
                 <a href="pricing.html" class="text-gray-600 hover:text-gray-900 transition">Pricing</a>
                 <a href="https://privacywriter.vercel.app/" class="px-6 py-2 btn-primary rounded-lg hover:opacity-90 transition">Add Extension Now!</a>
             </div>
-            <button class="md:hidden text-gray-600">
+            <button id="mobile-menu-button" class="md:hidden text-gray-600 p-2 rounded-lg hover:bg-gray-50 transition">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
             </button>
         </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 shadow-xl">
+            <div class="px-4 pt-4 pb-6 space-y-2">
+                <a href="#" class="block px-4 py-3 rounded-xl text-base font-medium text-gray-900 bg-gray-50">Home</a>
+                <a href="features.html" class="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900">Features</a>
+                <a href="#how-it-works" class="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900">How It Works</a>
+                <a href="pricing.html" class="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900">Pricing</a>
+                <div class="pt-4">
+                    <a href="https://privacywriter.vercel.app/" class="block w-full text-center px-6 py-3 btn-primary rounded-xl font-semibold shadow-sm">Add Extension Now!</a>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="pt-40 pb-20 px-6">
+    <section class="pt-28 md:pt-40 pb-16 md:pb-20 px-6">
         <div class="max-w-6xl mx-auto">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h1 class="text-5xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                    <h1 class="text-4xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
                         Your AI Writing Assistant That Respects Your Privacy
                     </h1>
                     <p class="text-xl text-gray-600 mb-8">
                         100% local processing. Zero data collection. Powerful writing tools powered by Chrome's built-in AI. Transform your writing instantly.
                     </p>
-                    <div class="flex gap-4 flex-wrap">
-                        <a href="#" class="gradient-primary text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#" class="gradient-primary text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition text-center">
                             Add to Browser
                         </a>
-                        <a href="#features" class="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-900 hover:border-gray-900 transition">
+                        <a href="#features" class="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-900 hover:border-gray-900 transition text-center">
                             Learn More
                         </a>
                     </div>
                 </div>
-                <div class="bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl h-96 flex items-center justify-center">
+                <div class="bg-gradient-to-br from-purple-100 to-indigo-100 rounded-2xl h-64 md:h-96 flex items-center justify-center mt-8 md:mt-0">
                     <div class="text-center">
                         <div class="text-6xl mb-4">✍️</div>
                         <p class="text-gray-600">AI-powered writing enhancement</p>
@@ -282,5 +294,14 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
 </body>
 </html>

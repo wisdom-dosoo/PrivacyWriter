@@ -14,11 +14,14 @@
   --bg-dark: #f3f4f6;
   --border: #e5e7eb;
 }
-html,body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
+html,body{
+  font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /*  Removed purple from the default gradient */
 .gradient-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));}
-.gradient-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));}
 .gradient-primary-text{background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .gradient-hover{transition:all .25s ease}
 .gradient-hover:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(16,185,129,0.08)}
@@ -32,3 +35,8 @@ a{color:inherit}
 .site-logo{display:flex;align-items:center;gap:.5rem}
 .site-logo .mark{width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700}
 .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+
+@media (max-width: 768px) {
+  .card { padding: 1.25rem; }
+  h1 { letter-spacing: -0.02em; }
+}
