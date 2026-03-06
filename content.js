@@ -9,6 +9,42 @@ let resultPopup = null;
 let selectedText = '';
 let selectedRange = null;
 let selectedElement = null;
+let currentToolMode = 'default';
+
+// Tool Configurations for Quick Actions
+const TOOL_MODES = {
+  'default': [
+    { action: 'grammar', icon: '✏️', title: 'Check Grammar' },
+    { action: 'rewrite', icon: '🔄', title: 'Rewrite' },
+    { action: 'summarize', icon: '📋', title: 'Summarize' },
+    { action: 'translate', icon: '🌐', title: 'Translate' }
+  ],
+  'compose-email': [
+    { action: 'email-professional', icon: '👔', title: 'Professional Email' },
+    { action: 'email-request', icon: '🙏', title: 'Request Email' },
+    { action: 'email-follow-up', icon: '↩️', title: 'Follow-up Email' },
+    { action: 'exit-mode', icon: '🔙', title: 'Back to Default' }
+  ],
+  'expand-ideas': [
+    { action: 'expand', icon: '➕', title: 'Expand Ideas' },
+    { action: 'blog-intro', icon: '📝', title: 'Blog Intro' },
+    { action: 'exit-mode', icon: '🔙', title: 'Back to Default' }
+  ],
+  'simplify-language': [
+    { action: 'simplify', icon: '👶', title: 'Simplify' },
+    { action: 'summarize', icon: '📋', title: 'Summarize' },
+    { action: 'exit-mode', icon: '🔙', title: 'Back to Default' }
+  ],
+  'writing-coach': [
+    { action: 'analyze-writing', icon: '🧠', title: 'Analyze Quality' },
+    { action: 'grammar', icon: '✏️', title: 'Fix Grammar' },
+    { action: 'exit-mode', icon: '🔙', title: 'Back to Default' }
+  ],
+  'custom-prompts': [
+    { action: 'rewrite', icon: '✨', title: 'Run Custom' },
+    { action: 'exit-mode', icon: '🔙', title: 'Back to Default' }
+  ]
+};
 
 // Initialize
 init();
@@ -23,12 +59,8 @@ function init() {
 function createSelectionToolbar() {
   selectionToolbar = document.createElement('div');
   selectionToolbar.id = 'privacylens-toolbar';
-  selectionToolbar.innerHTML = `
-    <button data-action="grammar" title="Check Grammar">✏️</button>
-    <button data-action="rewrite" title="Rewrite">🔄</button>
-    <button data-action="summarize" title="Summarize">📋</button>
-    <button data-action="translate" title="Translate">🌐</button>
-  `;
+  // Initial render
+  updateToolbarButtons();
 
   // Prevent toolbar clicks from clearing selection
   selectionToolbar.addEventListener('mousedown', (e) => {
@@ -37,6 +69,14 @@ function createSelectionToolbar() {
   });
 
   document.body.appendChild(selectionToolbar);
+}
+
+// Update toolbar buttons based on current mode
+function updateToolbarButtons() {
+  const tools = TOOL_MODES[currentToolMode] || TOOL_MODES['default'];
+  selectionToolbar.innerHTML = tools.map(tool => 
+    `<button data-action="${tool.action}" title="${tool.title}">${tool.icon}</button>`
+  ).join('');
 }
 
 // Create result popup
@@ -96,6 +136,15 @@ function setupEventListeners() {
       showResultPopup(request.result, request.type);
     } else if (request.action === 'showError') {
       showError(request.error);
+    } else if (request.action === 'setToolMode') {
+      // Switch toolbar mode
+      if (TOOL_MODES[request.mode]) {
+        currentToolMode = request.mode;
+        if (selectionToolbar && selectionToolbar.style.display !== 'none') {
+          updateToolbarButtons();
+        }
+        showNotification(`Mode: ${request.mode.replace('-', ' ')}`);
+      }
     }
   });
 }
@@ -129,6 +178,7 @@ function handleTextSelection(e) {
 function showSelectionToolbar(selection) {
   const range = selection.getRangeAt(0);
   const rect = range.getBoundingClientRect();
+  updateToolbarButtons(); // Ensure correct buttons are shown
   
   selectionToolbar.style.display = 'flex';
   
@@ -173,6 +223,12 @@ async function handleToolbarAction(action) {
 
   if (!selectedText) return;
   
+  if (action === 'exit-mode') {
+    currentToolMode = 'default';
+    hideSelectionToolbar();
+    return;
+  }
+
   hideSelectionToolbar();
   showLoading();
   
@@ -213,6 +269,38 @@ async function handleToolbarAction(action) {
           targetLang: 'es' // Default to Spanish, could add language picker
         });
         break;
+        
+      // NEW: Handle dynamic tool actions
+      case 'expand':
+      case 'simplify':
+        response = await chrome.runtime.sendMessage({
+          action: 'generateContent',
+          template: action,
+          topic: selectedText
+        });
+        break;
+        
+      case 'analyze-writing':
+        response = await chrome.runtime.sendMessage({
+          action: 'analyzeWriting',
+          text: selectedText
+        });
+        // Format object result for display
+        if (response && response.success && typeof response.result === 'object') {
+           const a = response.result;
+           response.result = `Score: ${a.score}/100\n\n${a.feedback}\n\nIssues:\n• ${a.issues.join('\n• ')}`;
+        }
+        break;
+
+      default:
+        // Handle dynamic templates like email-professional
+        if (action.startsWith('email-') || action.startsWith('blog-')) {
+           response = await chrome.runtime.sendMessage({
+             action: 'generateContent',
+             template: action,
+             topic: selectedText
+           });
+        }
     }
     
     if (response && response.success) {

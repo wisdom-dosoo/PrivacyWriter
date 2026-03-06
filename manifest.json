@@ -76,7 +76,7 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["icons/*", "payment-sus.html", "landing-page.html", "upgrade.html", "public/*"],
+      "resources": ["icons/*", "payment-sus.html", "index.html", "upgrade.html", "public/*"],
       "matches": ["<all_urls>"]
     }
   ],
@@ -88,5 +88,5 @@
   "minimum_chrome_version": "138",
   
   "author": "PrivacyWriter",
-  "homepage_url": "https://privacywriter.app"
+  "homepage_url": "https://privacywriter.vercel.app/"
 }

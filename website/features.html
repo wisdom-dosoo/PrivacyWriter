@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Features & Security - PrivacyWriter</title>
+    <link rel="icon" href="../icons/icon48.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <style>body{background:#fff}</style>
@@ -12,13 +13,16 @@
     <!-- Navigation -->
     <nav class="fixed w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="site-logo">
-                <div class="mark">PW</div>
-                <span class="font-bold text-xl text-gray-900">PrivacyWriter</span>
+            <div class="site-logo flex items-center gap-3">
+                <img src="../icons/icon48.png" alt="PrivacyWriter" class="w-10 h-10 object-contain">
+                <span class="font-bold text-2xl text-gray-900 tracking-tight">PrivacyWriter</span>
             </div>
             <div class="hidden md:flex gap-8 items-center">
                 <a href="index.html" class="text-gray-600 hover:text-gray-900 transition">Home</a>
-                <a href="upgrade.html" class="px-6 py-2 btn-primary rounded-lg hover:opacity-90 transition">Get Started</a>
+                <a href="features.html" class="text-gray-900 font-semibold transition">Features</a>
+                <a href="index.html#how-it-works" class="text-gray-600 hover:text-gray-900 transition">How It Works</a>
+                <a href="pricing.html" class="text-gray-600 hover:text-gray-900 transition">Pricing</a>
+                <a href="https://privacywriter.vercel.app/" class="px-6 py-2 btn-primary rounded-lg hover:opacity-90 transition">Add Extension Now!</a>
             </div>
         </div>
     </nav>
@@ -230,13 +234,42 @@
         </div>
     </section>
 
+    <!-- FAQ Section -->
+    <section class="bg-gray-50 py-20 px-6">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Frequently Asked Questions</h2>
+            <div class="space-y-6">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">How does PrivacyWriter protect my privacy?</h3>
+                    <p class="text-gray-600">Unlike other writing assistants that send your text to cloud servers, PrivacyWriter processes everything locally on your device using Chrome's built-in AI. Your text never leaves your browser.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Is PrivacyWriter free to use?</h3>
+                    <p class="text-gray-600">Yes! The core features including grammar checking, rewriting, and summarization are completely free forever. We offer a Pro plan for advanced features like cloud sync and custom prompts.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Do I need an OpenAI or Claude account?</h3>
+                    <p class="text-gray-600">No. The extension runs standalone using local AI models. However, Pro users can optionally connect their own API keys if they prefer cloud-based processing for specific tasks.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Does it work on all websites?</h3>
+                    <p class="text-gray-600">PrivacyWriter works on almost any text input field in your browser, including Gmail, Google Docs, LinkedIn, Twitter/X, and more.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">How do I install it?</h3>
+                    <p class="text-gray-600">Simply click the "Add to Browser" button, which takes you to the Chrome Web Store. Once installed, pin the extension icon to your toolbar for easy access.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="gradient-primary text-white py-16 px-6">
         <div class="max-w-4xl mx-auto text-center">
             <h2 class="text-4xl font-bold mb-6">Experience Powerful Writing Tools with Privacy</h2>
             <p class="text-xl opacity-90 mb-8">Get started with PrivacyWriter today. Free forever, upgrade anytime.</p>
             <div class="flex gap-4 justify-center flex-wrap">
-                <a href="upgrade.html" class="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">Add to Chrome - Free</a>
+                <a href="upgrade.html" class="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">Add to Browser - Free</a>
                 <a href="index.html" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition">Back to Home</a>
             </div>
         </div>
@@ -247,9 +280,9 @@
         <div class="max-w-6xl mx-auto">
             <div class="grid md:grid-cols-4 gap-8 mb-8">
                 <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold">PW</div>
-                        <span class="font-bold text-white">PrivacyWriter</span>
+                    <div class="flex items-center gap-3 mb-6">
+                        <img src="../icons/icon48.png" alt="PrivacyWriter" class="w-8 h-8 object-contain">
+                        <span class="font-bold text-xl text-white tracking-tight">PrivacyWriter</span>
                     </div>
                     <p class="text-sm">Privacy-first AI writing assistant.</p>
                 </div>

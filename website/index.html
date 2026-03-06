@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PrivacyWriter - Privacy-First AI Writing Assistant</title>
+    <link rel="icon" href="../icons/icon48.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,15 +12,16 @@
     <!-- Navigation -->
     <nav class="fixed w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="site-logo">
-                <div class="mark">PW</div>
-                <span class="font-bold text-xl text-gray-900">PrivacyWriter</span>
+            <div class="site-logo flex items-center gap-3">
+                <img src="../icons/icon48.png" alt="PrivacyWriter" class="w-10 h-10 object-contain">
+                <span class="font-bold text-2xl text-gray-900 tracking-tight">PrivacyWriter</span>
             </div>
             <div class="hidden md:flex gap-8 items-center">
+                <a href="#" class="text-gray-900 font-semibold transition">Home</a>
                 <a href="features.html" class="text-gray-600 hover:text-gray-900 transition">Features</a>
                 <a href="#how-it-works" class="text-gray-600 hover:text-gray-900 transition">How It Works</a>
                 <a href="pricing.html" class="text-gray-600 hover:text-gray-900 transition">Pricing</a>
-                <a href="upgrade.html" class="px-6 py-2 btn-primary rounded-lg hover:opacity-90 transition">Get Started</a>
+                <a href="https://privacywriter.vercel.app/" class="px-6 py-2 btn-primary rounded-lg hover:opacity-90 transition">Add Extension Now!</a>
             </div>
             <button class="md:hidden text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,8 +43,8 @@
                         100% local processing. Zero data collection. Powerful writing tools powered by Chrome's built-in AI. Transform your writing instantly.
                     </p>
                     <div class="flex gap-4 flex-wrap">
-                        <a href="upgrade.html" class="gradient-primary text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
-                            Add to Chrome
+                        <a href="#" class="gradient-primary text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+                            Add to Browser
                         </a>
                         <a href="#features" class="px-8 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-900 hover:border-gray-900 transition">
                             Learn More
@@ -140,7 +142,7 @@
                 <div class="text-center">
                     <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
                     <h3 class="font-bold text-gray-900 mb-2">Install</h3>
-                    <p class="text-gray-600 text-sm">Add PrivacyWriter to your Chrome browser in seconds.</p>
+                    <p class="text-gray-600 text-sm">Add PrivacyWriter to your web browser in seconds.</p>
                 </div>
                 <div class="text-center">
                     <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">2</div>
@@ -156,6 +158,28 @@
                     <div class="w-16 h-16 gradient-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">4</div>
                     <h3 class="font-bold text-gray-900 mb-2">Get Results</h3>
                     <p class="text-gray-600 text-sm">Instantly improve your text with AI-powered enhancements.</p>
+                </div>
+            </div>
+
+            <!-- Installation Tutorial -->
+            <div class="mt-20 border-t border-gray-200 pt-16">
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-10">Installation Guide</h3>
+                <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="text-4xl mb-4">🖱️</div>
+                        <h4 class="font-bold text-gray-900 mb-2">1. Add to Browser</h4>
+                        <p class="text-gray-600 text-sm">Click the "Add Extension Now" button to visit the Chrome Web Store.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="text-4xl mb-4">✅</div>
+                        <h4 class="font-bold text-gray-900 mb-2">2. Confirm Install</h4>
+                        <p class="text-gray-600 text-sm">Click "Add to Chrome" and confirm the installation in the browser popup.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="text-4xl mb-4">📌</div>
+                        <h4 class="font-bold text-gray-900 mb-2">3. Pin Extension</h4>
+                        <p class="text-gray-600 text-sm">Click the puzzle icon in your toolbar and pin PrivacyWriter for easy access.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,7 +232,7 @@
             <p class="text-xl opacity-90 mb-8">Join thousands of writers using PrivacyWriter to enhance their writing with AI, while keeping their privacy intact.</p>
             <div class="flex gap-4 justify-center flex-wrap">
                 <a href="upgrade.html" class="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
-                    Add to Chrome - Free
+                    Add to Browser - Free
                 </a>
                 <a href="pricing.html" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition">
                     View Pricing
@@ -222,9 +246,9 @@
         <div class="max-w-6xl mx-auto">
             <div class="grid md:grid-cols-4 gap-8 mb-8">
                 <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold">PW</div>
-                        <span class="font-bold text-white">PrivacyWriter</span>
+                    <div class="flex items-center gap-3 mb-6">
+                        <img src="../icons/icon48.png" alt="PrivacyWriter" class="w-8 h-8 object-contain">
+                        <span class="font-bold text-xl text-white tracking-tight">PrivacyWriter</span>
                     </div>
                     <p class="text-sm">Privacy-first AI writing assistant.</p>
                 </div>

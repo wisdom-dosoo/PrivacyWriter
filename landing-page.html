@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrivacyWriter - Secure, On-Device AI Writing Assistant</title>
+  <meta name="description" content="Enhance your writing with PrivacyWriter, the secure AI-powered Chrome extension. Get grammar checks, rewrites, and summaries, all processed locally on your device for ultimate privacy.">
+  <meta name="keywords" content="privacy writing assistant, secure grammar checker, on-device AI, local AI writer, offline writing tool, Gemini Nano extension, AI writing without cloud, private proofreading, confidential document editor">
+  <link rel="icon" href="icons/icon48.png" type="image/png">
+  <link rel="stylesheet" href="landing-page.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Additional styles for expanded content */
+    .section-content { padding: 4rem 1rem; background: #fff; border-bottom: 1px solid #eee; }
+    .section-content h2 { text-align: center; font-size: 2rem; color: #2c3e50; margin-bottom: 2rem; }
+    .section-alt { background: #f9f9f9; }
+    .feature-grid-expanded { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; max-width: 1000px; margin: 0 auto; }
+    .feature-item { padding: 1.5rem; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; }
+    .feature-item h3 { color: #3498db; margin-top: 0.5rem; }
+    .privacy-box { max-width: 800px; margin: 0 auto; background: #eaf5ff; border-left: 5px solid #3498db; padding: 2rem; border-radius: 4px; }
+    .faq-item { max-width: 800px; margin: 1.5rem auto; }
+    .faq-item strong { display: block; margin-bottom: 0.5rem; color: #2c3e50; font-size: 1.1rem; }
+    .text-center { text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="bg-decoration"></div>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <img src="icons/icon48.png" alt="PrivacyWriter" width="32" height="32">
+        <span class="text">PrivacyWriter</span>
+      </div>
+      <nav>
+        <a href="https://privacywriter.vercel.app/" class="btn btn-primary nav-btn">Add to Browser</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="badge">✨ 100% Local AI Processing</div>
+        <h1>Write Smarter, <br> <span class="highlight">Stay Private.</span></h1>
+        <p class="subtitle">Enhance your writing with grammar checks, rewriting, and summarization. Your keystrokes never leave your browser.</p>
+        
+        <div class="cta-group">
+          <a href="https://privacywriter.vercel.app/" class="btn btn-primary">
+            Add to Browser <span class="arrow">→</span>
+          </a>
+          <button id="checkStatusBtn" class="btn btn-secondary">Check System Status</button>
+        </div>
+      </section>
+
+      <section class="status-panel" id="statusPanel">
+        <div class="panel-header">
+          <h3>System Health</h3>
+          <div class="pulse-dot"></div>
+        </div>
+        <div class="status-grid">
+          <div class="status-item" id="status-ai">
+            <div class="status-icon-wrapper"><span class="status-icon">❓</span></div>
+            <div class="status-text">
+              <strong>AI Engine</strong>
+              <span class="status-desc">Checking availability...</span>
+            </div>
+          </div>
+          <div class="status-item" id="status-apis">
+            <div class="status-icon-wrapper"><span class="status-icon">❓</span></div>
+            <div class="status-text">
+              <strong>Capabilities</strong>
+              <span class="status-desc">Writer, Rewriter, Summarizer</span>
+            </div>
+          </div>
+        </div>
+        <div class="setup-guide hidden" id="setupGuide">
+          <div class="alert alert-warning">
+            <strong>Setup Required:</strong> Some AI features are not active.
+          </div>
+          <ol>
+            <li>Open <code>chrome://flags</code> in a new tab.</li>
+            <li>Enable <strong>Prompt API for Gemini Nano</strong>.</li>
+            <li>Enable <strong>Enforce On-Device Model Optimization</strong>.</li>
+            <li>Restart Chrome completely.</li>
+          </ol>
+          <a href="DOC/CHROME_AI_SETUP.md" target="_blank" class="link-small">View Full Setup Guide</a>
+        </div>
+      </section>
+
+      <section class="section-content">
+        <div class="privacy-box">
+          <h2>Your Words are Yours. Period.</h2>
+          <p>In an era of cloud-based everything, PrivacyWriter takes a different approach. We leverage <strong>on-device AI</strong>, powered by Google's Gemini Nano, to ensure your text never leaves your computer for standard operations. Write, edit, and refine your work with the peace of mind that comes from true data privacy.</p>
+        </div>
+      </section>
+
+      <section class="section-content section-alt">
+        <h2>Features for Every Writer</h2>
+        <div class="feature-grid-expanded">
+          <div class="feature-item">
+            <h3>✏️ Flawless Grammar</h3>
+            <p>Correct mistakes and improve clarity with our advanced grammar checker. It's more than just spellcheck; it's a style coach.</p>
+          </div>
+          <div class="feature-item">
+            <h3>🔄 Intelligent Rewrites</h3>
+            <p>Change the tone of your writing instantly. Go from casual to professional, make text shorter or longer, and unlock Pro tones.</p>
+          </div>
+          <div class="feature-item">
+            <h3>📋 Instant Summaries</h3>
+            <p>Too long; didn't read? Select any text and get a concise summary in seconds. Perfect for research.</p>
+          </div>
+          <div class="feature-item">
+            <h3>🌐 Seamless Translation</h3>
+            <p>Translate text into dozens of languages. The free version includes major languages, while Pro unlocks over 50+ options.</p>
+          </div>
+          <div class="feature-item">
+            <h3>🛡️ Fact-Checking (Pro+)</h3>
+            <p>Ensure the integrity of your writing. Our Pro+ plan includes an AI-powered fact-checker to verify claims.</p>
+          </div>
+          <div class="feature-item">
+            <h3>🧠 AI Writing Coach (Pro)</h3>
+            <p>Get actionable feedback on your writing. Our AI Coach analyzes your text for clarity and engagement.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-content">
+        <h2>How It Works: A Local-First AI Engine</h2>
+        <div class="feature-grid-expanded">
+          <div>
+            <h3>1. Chrome's Built-in AI</h3>
+            <p>We first use the native, hyper-fast AI APIs in Chrome for tasks like proofreading and rewrites. This is 100% local.</p>
+          </div>
+          <div>
+            <h3>2. Gemini Nano Fallback</h3>
+            <p>If a dedicated API isn't available, we use the on-device Gemini Nano model for more complex tasks. Still 100% local.</p>
+          </div>
+          <div>
+            <h3>3. Optional Cloud (Pro)</h3>
+            <p>Pro users can optionally connect their own Claude API key for maximum power. This is the only time data leaves your device.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-content section-alt">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-item">
+          <strong>Is it really private?</strong>
+          <p>Yes. By default, all AI processing happens on your device. We only send data to a third-party service (like Anthropic's Claude) if you are a Pro user and have explicitly enabled it by providing your own API key.</p>
+        </div>
+        <div class="faq-item">
+          <strong>What is on-device AI?</strong>
+          <p>It means the AI models run directly inside your Chrome browser. This is made possible by new technologies from Google (Project Gemini Nano). It's faster, works offline, and is completely private.</p>
+        </div>
+        <div class="text-center" style="margin-top: 2rem;">
+          <a href="https://privacywriter.vercel.app/" class="btn btn-primary">Add to Browser</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-links">
+        <a href="https://privacywriter.vercel.app/privacy" target="_blank">Privacy Policy</a>
+        <span class="separator">•</span>
+        <a href="https://privacywriter.vercel.app/terms" target="_blank">Terms</a>
+      </div>
+      <p>&copy; 2026 PrivacyWriter. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="landing-page.js"></script>
+</body>
+</html>
