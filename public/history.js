@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadHistory();
   setupEventListeners();
   updateStats();
+  setupConfirmationModal();
   // Initial render
   renderPage(1, true);
 });
@@ -23,6 +24,19 @@ function setupEventListeners() {
   document.getElementById('searchInput').addEventListener('input', filterHistory);
   document.getElementById('typeFilter').addEventListener('change', filterHistory);
   document.getElementById('btnLoadMore').addEventListener('click', () => renderPage(currentPage + 1));
+
+  // Action Buttons
+  const btnClear = document.getElementById('btnClearHistory');
+  if (btnClear) btnClear.addEventListener('click', clearHistory);
+
+  const btnExportCsv = document.getElementById('btnExportCSV');
+  if (btnExportCsv) btnExportCsv.addEventListener('click', exportAsCSV);
+
+  const btnExportJson = document.getElementById('btnExportJSON');
+  if (btnExportJson) btnExportJson.addEventListener('click', exportAsJSON);
+
+  // Event Delegation for dynamic items
+  document.getElementById('historyList').addEventListener('click', handleItemAction);
 }
 
 function filterHistory() {
@@ -43,6 +57,32 @@ function filterHistory() {
   });
 
   renderPage(1, true);
+}
+
+async function handleItemAction(e) {
+  const button = e.target.closest('button');
+  if (!button) return;
+
+  const action = button.dataset.action;
+  const id = button.dataset.id;
+
+  if (!action || !id) return;
+
+  if (action === 'copy') {
+    const field = button.dataset.field;
+    await copyToClipboard(id, field);
+    
+    // Visual feedback
+    const originalText = button.innerHTML;
+    button.innerHTML = '✅ Copied!';
+    button.classList.add('btn-success');
+    setTimeout(() => {
+      button.innerHTML = originalText;
+      button.classList.remove('btn-success');
+    }, 1500);
+  } else if (action === 'delete') {
+    await deleteItem(id);
+  }
 }
 
 function renderPage(page, reset = false) {
@@ -91,9 +131,9 @@ function renderPage(page, reset = false) {
         <div class="history-content">${escapeHtml(item.result)}</div>
       </div>
       <div class="history-actions">
-        <button class="small" onclick="copyToClipboard('${item.id}', 'result')">📋 Copy Result</button>
-        <button class="small" onclick="copyToClipboard('${item.id}', 'original')">📋 Copy Original</button>
-        <button class="small" onclick="deleteItem('${item.id}')" style="background: #f44336;">🗑️ Delete</button>
+        <button class="small" data-action="copy" data-id="${item.id}" data-field="result">📋 Copy Result</button>
+        <button class="small" data-action="copy" data-id="${item.id}" data-field="original">📋 Copy Original</button>
+        <button class="small" data-action="delete" data-id="${item.id}" style="background: var(--danger, #ef4444); color: white;">🗑️ Delete</button>
       </div>
     </div>
   `}).join('');
@@ -161,7 +201,7 @@ async function copyToClipboard(id, field) {
 }
 
 async function deleteItem(id) {
-  if (!confirm('Delete this history item?')) return;
+  if (!(await showConfirmation('Delete this history item?', 'Delete'))) return;
   
   fullHistory = fullHistory.filter(h => h.id != id);
   await chrome.storage.local.set({ history: fullHistory });
@@ -173,7 +213,7 @@ async function deleteItem(id) {
 }
 
 async function clearHistory() {
-  if (!confirm('⚠️ Are you sure? This will delete ALL history permanently.')) return;
+  if (!(await showConfirmation('⚠️ Are you sure? This will delete ALL history permanently.', 'Clear All'))) return;
   
   fullHistory = [];
   filteredHistory = [];
@@ -240,4 +280,93 @@ function showToast(message, type = 'success') {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+// --- Custom Confirmation Modal ---
+function setupConfirmationModal() {
+  if (document.getElementById('custom-modal-overlay')) return;
+
+  const css = `
+    .custom-modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden; transition: all 0.2s ease;
+      backdrop-filter: blur(2px);
+    }
+    .custom-modal-overlay.active { opacity: 1; visibility: visible; }
+    .custom-modal {
+      background: var(--card-bg, white); width: 90%; max-width: 320px;
+      padding: 24px; border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      transform: scale(0.95); transition: all 0.2s ease;
+    }
+    .custom-modal-overlay.active .custom-modal { transform: scale(1); }
+    .custom-modal h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--text-main, #333); }
+    .custom-modal p { margin: 0 0 20px 0; color: var(--text-muted, #666); line-height: 1.5; font-size: 14px; }
+    .custom-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .modal-btn { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; font-size: 13px; }
+    .modal-btn:active { transform: translateY(1px); }
+    .modal-btn-cancel { background: var(--bg-light, #f3f4f6); color: var(--text-muted, #4b5563); }
+    .modal-btn-cancel:hover { background: #e5e7eb; }
+    .modal-btn-cancel:active { background: #d1d5db; }
+    .modal-btn-confirm { background: var(--danger, #ef4444); color: white; }
+    .modal-btn-confirm:hover { background: #dc2626; }
+    .modal-btn-confirm:active { background: #b91c1c; }
+  `;
+  
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  const html = `
+    <div class="custom-modal">
+      <h3 id="modal-title">Confirm Action</h3>
+      <p id="modal-message"></p>
+      <div class="custom-modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="modal-cancel">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  `;
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'custom-modal-overlay';
+  overlay.className = 'custom-modal-overlay';
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+function showConfirmation(message, confirmText = 'Delete') {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('custom-modal-overlay');
+    const msgEl = document.getElementById('modal-message');
+    const confirmBtn = document.getElementById('modal-confirm');
+    const cancelBtn = document.getElementById('modal-cancel');
+
+    if (!overlay) {
+      resolve(confirm(message)); // Fallback
+      return;
+    }
+
+    msgEl.textContent = message;
+    confirmBtn.textContent = confirmText;
+    
+    overlay.classList.add('active');
+
+    const close = (result) => {
+      overlay.classList.remove('active');
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      setTimeout(() => resolve(result), 200); // Wait for animation
+    };
+
+    confirmBtn.onclick = () => close(true);
+    cancelBtn.onclick = () => close(false);
+    
+    // Close on click outside
+    overlay.onclick = (e) => {
+      if (e.target === overlay) close(false);
+    };
+  });
 }

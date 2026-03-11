@@ -45,6 +45,11 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Setup all button event listeners (CSP-compliant)
  */
 function setupEventListeners() {
+  const btnCloseSettings = document.getElementById('btnCloseSettings');
+  if (btnCloseSettings) {
+    btnCloseSettings.addEventListener('click', () => window.close());
+  }
+
   // General Settings Tab
   const btnSaveGeneral = document.getElementById('btnSaveGeneral');
   if (btnSaveGeneral) btnSaveGeneral.addEventListener('click', saveGeneralSettings);
